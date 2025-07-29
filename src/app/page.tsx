@@ -1,6 +1,8 @@
 'use client'
+import { Inventory } from '@/components/Inventory';
 import { Layout } from '@/components/Layout';
-import { LoginForm } from '@/components/LoginForm';
+import { Reports } from '@/components/Reports';
+import { Returns } from '@/components/Return';
 import React, { useState, useEffect } from 'react';
 // import { User } from '@supabase/supabase-js';
 // import { LoginForm } from './components/LoginForm';
@@ -43,13 +45,13 @@ function App() {
       case 'order':
         return <div> Orders </div>;
       case 'inventory':
-        return <div> Inventory </div>
+        return <Inventory />
       case 'returns':
-        return <div> Returns </div>
+        return <Returns />
       case 'product':
         return <div> Product </div>
       case 'reports':
-        return <div> Reports </div>
+        return <Reports />
       case 'expenses':
         return <div> Expenses </div>
       default:
