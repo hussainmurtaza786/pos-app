@@ -1,0 +1,143 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url      = env("DATABASE_URL")
+  url      = env("POSTGRES_PRISMA_POOL_URL")
+}
+
+enum PaymentMethod {
+  cash
+  card
+  digital
+}
+
+enum SaleStatus {
+  completed
+  pending
+  cancelled
+}
+
+enum ReturnType {
+  partial
+  full
+}
+
+model User {
+  id         String      @id @db.Uuid
+  categories Category[]
+  products   Product[]
+  sales      Sale[]
+  returns    Return[]
+
+  @@map("users") // auth.users if you mirror to public schema
+}
+
+model Category {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String
+  userId    String     @db.Uuid
+  createdAt DateTime?  @default(now()) @db.Timestamptz(6)
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products  Product[]
+
+  @@unique([userId, name], name: "unique_user_category_name")
+  @@index([userId])
+  @@index([name])
+  @@map("categories")
+}
+
+model Product {
+  id            String     @id @default(uuid()) @db.Uuid
+  name          String
+  description   String     @default("")
+  cost          Decimal    @default(0.00) @db.Decimal(10, 2)
+  price         Decimal    @default(0.00) @db.Decimal(10, 2)
+  sku           String
+  stockQuantity Int        @default(0)
+  categoryId    String?    @db.Uuid
+  userId        String     @db.Uuid
+  createdAt     DateTime?  @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime?  @default(now()) @db.Timestamptz(6)
+
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category      Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  saleItems     SaleItem[]
+
+  @@unique([userId, sku], name: "unique_user_product_sku")
+  @@index([userId])
+  @@index([categoryId])
+  @@index([sku])
+  @@index([stockQuantity])
+  @@map("products")
+}
+
+model Sale {
+  id           String       @id @default(uuid()) @db.Uuid
+  saleNumber   String
+  userId       String       @db.Uuid
+  totalAmount  Decimal      @default(0.00) @db.Decimal(10, 2)
+  totalCost    Decimal      @default(0.00) @db.Decimal(10, 2)
+  totalProfit  Decimal      @default(0.00) @db.Decimal(10, 2)
+  paymentMethod PaymentMethod @default(cash)
+  status       SaleStatus   @default(completed)
+  createdAt    DateTime?    @default(now()) @db.Timestamptz(6)
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  saleItems    SaleItem[]
+  returns      Return[]
+
+  @@unique([userId, saleNumber], name: "unique_user_sale_number")
+  @@index([userId])
+  @@index([createdAt])
+  @@index([status])
+  @@index([saleNumber])
+  @@map("sales")
+}
+
+model SaleItem {
+  id          String    @id @default(uuid()) @db.Uuid
+  saleId      String    @db.Uuid
+  productId   String    @db.Uuid
+  quantity    Int       @default(1)
+  unitPrice   Decimal   @default(0.00) @db.Decimal(10, 2)
+  unitCost    Decimal   @default(0.00) @db.Decimal(10, 2)
+  totalPrice  Decimal   @default(0.00) @db.Decimal(10, 2)
+  totalCost   Decimal   @default(0.00) @db.Decimal(10, 2)
+
+  sale        Sale      @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([saleId])
+  @@index([productId])
+  @@map("sale_items")
+}
+
+model Return {
+  id           String      @id @default(uuid()) @db.Uuid
+  saleId       String      @db.Uuid
+  userId       String      @db.Uuid
+  returnType   ReturnType  @default(partial)
+  reason       String      @default("")
+  totalRefund  Decimal     @default(0.00) @db.Decimal(10, 2)
+  items        Json        @default("[]")
+  createdAt    DateTime?   @default(now()) @db.Timestamptz(6)
+
+  sale         Sale        @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([saleId])
+  @@index([createdAt])
+  @@map("returns")
+}
