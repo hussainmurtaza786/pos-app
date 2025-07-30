@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-// import { signIn } from '../lib/auth';
 import { FiEyeOff } from 'react-icons/fi';
 import { FaEye } from 'react-icons/fa6';
 import { IoIosTrendingUp } from 'react-icons/io';
+import { useDispatch } from 'react-redux';
+import { updateAuthData } from '@/redux/slices/auth';
 
 interface LoginFormProps {
   onLogin: () => void;
@@ -15,20 +16,56 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const dispatch = useDispatch()
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-    //   await signIn(email, password);
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        setError('Server did not return JSON.');
+        return;
+      }
+
+
+      if (!res.ok) {
+        setError(data.error || 'Login failed');
+        return;
+      }
+
+      // Destructure token and userDetails from response
+      const { token, userDetails } = data.data;
+
+      // Save to Redux
+      dispatch(updateAuthData({ authToken: token, userDetails }));
+
+      // Optional: Save token in localStorage or cookies
+      localStorage.setItem('token', token);
+
+
+      // Call onLogin callback
       onLogin();
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      setError('Something went wrong. Please try again.');
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
@@ -46,7 +83,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
             Access your sales and inventory management
           </p>
         </div>
-        
+
         <div className="bg-white p-6 lg:p-8 rounded-xl shadow-lg border border-gray-100">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
@@ -54,7 +91,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 {error}
               </div>
             )}
-            
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address

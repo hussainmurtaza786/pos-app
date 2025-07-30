@@ -6,23 +6,33 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "prismagen": "prisma generate",
-    "prismapush": "prisma db push",
+    "prismagen": "prisma generate --schema=src/prisma/schema.prisma",
+    "prismapush": "prisma db push --schema=src/prisma/schema.prisma",
     "lint": "next lint"
   },
   "dependencies": {
+    "@prisma/adapter-neon": "^6.13.0",
     "@prisma/client": "^6.12.0",
+    "@reduxjs/toolkit": "^2.8.2",
+    "axios": "^1.11.0",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.2",
     "next": "15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-icons": "^5.5.0"
+    "react-icons": "^5.5.0",
+    "react-redux": "^9.2.0",
+    "uuid": "^11.1.0",
+    "yup": "^1.6.1"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "postcss": "^8",
-    "prisma": "^6.12.0",
+    "prisma": "^6.13.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   }

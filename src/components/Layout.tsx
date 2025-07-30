@@ -1,3 +1,4 @@
+import { logout } from '@/redux/slices/auth';
 import React, { useState } from 'react';
 import { CiLogout } from 'react-icons/ci';
 import { FaChartBar, FaFileInvoice, FaMoneyBillWave } from "react-icons/fa";
@@ -5,22 +6,22 @@ import { FiFileText, FiRotateCcw } from 'react-icons/fi';
 import { GoPackage } from 'react-icons/go';
 import { HiOutlineCube } from 'react-icons/hi';
 import { IoIosTrendingUp } from 'react-icons/io';
+import { useDispatch } from 'react-redux';
 
 interface LayoutProps {
     children: React.ReactNode;
     activeTab: string;
     onTabChange: (tab: string) => void;
+    onSignOut: () => void;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, onSignOut }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-
+    const dispatch = useDispatch()
     const handleSignOut = async () => {
-        try {
-            //   await signOut();
-        } catch (error) {
-            console.error('Error signing out:', error);
-        }
+        localStorage.removeItem('token');
+        dispatch(logout());
+        onSignOut();
     };
 
     const navigation = [

@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Provider } from "react-redux";
+import store from "@/redux/store";
+import RootWrapper from "@/RootWrapper";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -10,7 +13,10 @@ export default function RootLayout({ children, }: Readonly<{ children: React.Rea
   return (
     <html lang="en">
       <body className=''>
-        {children}
+        <RootWrapper>
+          {children}
+        </RootWrapper>
+
       </body>
     </html>
   );
