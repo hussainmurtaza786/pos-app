@@ -1,8 +1,12 @@
 'use client'
+import { Dashboard } from '@/components/Dashboard';
+import Expenses from '@/components/Expenses';
+// import Expenses from '@/components/Expenses';
 import { Inventory } from '@/components/Inventory';
 import { Layout } from '@/components/Layout';
 import { Reports } from '@/components/Reports';
-import { Returns } from '@/components/Return';
+import Returns from '@/components/Return';
+// import { Returns } from '@/components/Return';
 import React, { useState, useEffect } from 'react';
 // import { User } from '@supabase/supabase-js';
 // import { LoginForm } from './components/LoginForm';
@@ -41,21 +45,19 @@ function App() {
   const renderActiveComponent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <div> Dashboard </div>
+        return <Dashboard />
       case 'order':
         return <div> Orders </div>;
       case 'inventory':
         return <Inventory />
       case 'returns':
         return <Returns />
-      case 'product':
-        return <div> Product </div>
       case 'reports':
         return <Reports />
       case 'expenses':
-        return <div> Expenses </div>
+        return <Expenses />
       default:
-        return <div> Dashboard </div>
+        return <Dashboard />
     }
   };
 
