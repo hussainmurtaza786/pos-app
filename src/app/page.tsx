@@ -1,6 +1,14 @@
-'use client';
+'use client'
+import { Dashboard } from '@/components/Dashboard';
+import Expenses from '@/components/Expenses';
+// import Expenses from '@/components/Expenses';
+import { Inventory } from '@/components/Inventory';
+
 import { Layout } from '@/components/Layout';
 import { LoginForm } from '@/components/LoginForm';
+import { Reports } from '@/components/Reports';
+import Returns from '@/components/Return';
+// import { Returns } from '@/components/Return';
 import React, { useState, useEffect } from 'react';
 
 function App() {
@@ -25,21 +33,20 @@ function App() {
   const renderActiveComponent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <div>Dashboard</div>;
+        return <Dashboard />
       case 'order':
         return <div>Orders</div>;
       case 'inventory':
-        return <div>Inventory</div>;
+        return <Inventory />
       case 'returns':
-        return <div>Returns</div>;
-      case 'product':
-        return <div>Product</div>;
+        return <Returns />
       case 'reports':
-        return <div>Reports</div>;
+        return <Reports />
       case 'expenses':
-        return <div>Expenses</div>;
+        return <Expenses />
       default:
-        return <div>Dashboard</div>;
+        return <Dashboard />
+
     }
   };
 
