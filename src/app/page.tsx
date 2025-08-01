@@ -6,10 +6,13 @@ import { Inventory } from '@/components/Inventory';
 
 import { Layout } from '@/components/Layout';
 import { LoginForm } from '@/components/LoginForm';
+import OrdersPage from '@/components/Sales';
+import Orders from '@/components/Orders';
 import { Reports } from '@/components/Reports';
 import Returns from '@/components/Return';
 // import { Returns } from '@/components/Return';
 import React, { useState, useEffect } from 'react';
+import Sales from '@/components/Sales';
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -34,8 +37,10 @@ function App() {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard />
-      case 'order':
-        return <div>Orders</div>;
+      case 'sales':
+        return <Sales />
+      case 'orders':
+        return <Orders />
       case 'inventory':
         return <Inventory />
       case 'returns':

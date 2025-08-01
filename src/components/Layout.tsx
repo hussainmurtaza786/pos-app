@@ -26,7 +26,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
 
     const navigation = [
         { id: 'dashboard', label: 'Dashboard', icon: FaChartBar },
-        { id: 'order', label: 'Orders', icon: FaFileInvoice },
+        { id: 'sales', label: 'Sales', icon: FaFileInvoice },
+        { id: 'orders', label: 'Orders', icon: FaFileInvoice },
         { id: 'expenses', label: 'Expenses', icon: FaMoneyBillWave },
         { id: 'inventory', label: 'Inventory', icon: GoPackage },
         { id: 'returns', label: 'Returns', icon: FiRotateCcw },
