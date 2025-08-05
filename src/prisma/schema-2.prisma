@@ -1,0 +1,211 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_PRISMA_POOL_URL")
+  // directUrl = env("POSTGRES_PRISMA_DIRECT_URL")
+}
+
+model AdminUser {
+  id        String           @id @default(cuid())
+  email     String           @unique
+  name      String
+  password  String
+  role      UserRole         @default(Staff)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime?        @updatedAt
+  access    AdminUserAccess?
+}
+
+model AdminUserAccess {
+  adminUserId String    @id
+  user        AdminUser @relation(fields: [adminUserId], references: [id])
+  AdminUsers  Json      @default("{ \"create\": false, \"read\": false, \"update\": false, \"delete\": false }")
+  Buyers      Json      @default("{ \"create\": false, \"read\": false, \"update\": false, \"delete\": false }")
+  SalesMen    Json      @default("{ \"create\": false, \"read\": false, \"update\": false, \"delete\": false }")
+  Products    Json      @default("{ \"create\": false, \"read\": false, \"update\": false, \"delete\": false }")
+  Orders      Json      @default("{ \"create\": false, \"read\": false, \"update\": false, \"delete\": false }")
+  Inventory   Json      @default("{ \"create\": false, \"read\": false, \"update\": false, \"delete\": false }")
+  Media       Json      @default("{ \"create\": false, \"read\": false, \"update\": false, \"delete\": false }")
+  Vendor      Json     @default("{ \"create\": false, \"read\": false, \"update\": false, \"delete\": false }")
+}
+
+enum UserRole {
+  Super_Admin
+  Admin
+  Staff
+}
+
+model Buyer {
+  id          String    @id @default(cuid())
+  email       String?   @unique
+  phone       String    @unique
+  password    String
+  buyerType   BuyerType @default(Retailer)
+  fullName    String?
+  companyName String?
+  location    String
+  cnic        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime? @updatedAt
+  Order       Order[]
+  referredBy  String? // this will show who referred this buyer
+}
+
+enum BuyerType {
+  Retailer
+}
+
+model SalesMan {
+  id        String    @id @default(cuid())
+  email     String?   @unique
+  phone     String    @unique
+  fullName  String
+  cnic      String?
+  password  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+  Order     Order[]
+}
+
+model Product {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+  price       Float
+  discount    Float   @default(0)
+  publish     Boolean @default(false)
+  outOfStock  Boolean @default(false)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  categoryId    String
+  subCategoryId String
+  media         ProductMedia[]
+
+  inventory      Inventory[]
+  productInOrder ProductInOrder[]
+  category       Category         @relation(fields: [categoryId], references: [id])
+  subCategory    SubCategory      @relation(fields: [subCategoryId], references: [id])
+}
+
+model ProductMedia {
+  mediaId   String
+  productId String
+  createdAt DateTime @default(now())
+  main      Boolean  @default(false) // if true, this media will be used as main image for product
+  product   Product? @relation(fields: [productId], references: [id])
+  media     Media?   @relation(fields: [mediaId], references: [id])
+
+  @@id([mediaId, productId])
+}
+
+model Category {
+  id          String        @id
+  // slug        String    @unique
+  name        String        @unique
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime?     @updatedAt
+  subCategory SubCategory[]
+  products    Product[]
+}
+
+model SubCategory {
+  id          String    @id
+  // slug        String    @unique
+  name        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime? @updatedAt
+  categoryId  String
+  products    Product[]
+  category    Category  @relation(fields: [categoryId], references: [id])
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  buyerId    String
+  salesManId String?
+  totalPrice Float
+  status     OrderStatus @default(Pending)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime?   @updatedAt
+
+  buyer    Buyer            @relation(fields: [buyerId], references: [id])
+  salesMan SalesMan?        @relation(fields: [salesManId], references: [id])
+  products ProductInOrder[]
+}
+
+enum OrderStatus {
+  Pending
+  Completed
+  Cancelled
+}
+
+model ProductInOrder {
+  orderId     String
+  productId   String
+  inventoryId String?
+  quantity    Int
+  sellPrice   Float
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime? @updatedAt
+
+  order     Order      @relation(fields: [orderId], references: [id])
+  product   Product    @relation(fields: [productId], references: [id])
+  inventory Inventory? @relation(fields: [inventoryId], references: [id])
+
+  @@id([orderId, productId])
+}
+
+model Inventory {
+  id            String @id @default(cuid())
+  productId     String
+  vendorId      String
+  purchasedQty  Int // purchased quantity
+  availableQty  Int // available quantity
+  purchasePrice Float
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  vendor         Vendor           @relation(fields: [vendorId], references: [id])
+  product        Product          @relation(fields: [productId], references: [id])
+  ProductInOrder ProductInOrder[]
+}
+
+model Media {
+  id           String         @id @default(cuid())
+  uri          String         @unique // referring to S3 bucket key
+  fileName     String
+  fileSize     String
+  contentType  String
+  createdAt    DateTime       @default(now())
+  productMedia ProductMedia[]
+}
+
+model Vendor {
+  id      String     @id @default(cuid())
+  name    String
+  email   String?    @unique
+  phone   String?    @unique
+  address String?
+  type    VenderType
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  Inventories Inventory[]
+}
+
+enum VenderType {
+  Manufacturer
+  Distributor
+  Wholesaler
+}

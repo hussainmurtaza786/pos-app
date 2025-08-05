@@ -4,6 +4,9 @@ import { formatCurrency } from '../../helper';
 import { BiCheckCircle, BiPackage, BiPlus, BiSearch } from 'react-icons/bi';
 import { FiAlertTriangle, FiEdit2 } from 'react-icons/fi';
 import { BsTrash2 } from 'react-icons/bs';
+import createInventoryItem, { deleteInventoryItem, updateInventoryItem } from '@/redux/thunks/inventoryApiThunk';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/redux/store';
 
 interface Product {
     id: string;
@@ -12,7 +15,7 @@ interface Product {
     cost: number;
     price: number;
     sku: string;
-    stock_quantity: number;
+    quantity: number;
     category_id: string;
     category?: { name: string };
 }
@@ -35,13 +38,14 @@ export const Inventory: React.FC = () => {
     const [newCategoryName, setNewCategoryName] = useState('');
     const [categoryLoading, setCategoryLoading] = useState(false);
 
+    const dispatch = useDispatch<AppDispatch>();
     const [productForm, setProductForm] = useState({
         name: '',
         description: '',
         cost: '',
         price: '',
         sku: '',
-        stock_quantity: '',
+        quantity: '',
         category_id: '',
     });
 
@@ -73,7 +77,17 @@ export const Inventory: React.FC = () => {
             // }
         }
     };
+    const handleAddProduct = async (data: any) => {
+        await dispatch(createInventoryItem(data));
+        setShowAddModal(false);
+    };
 
+    //   const handleUpdateProduct = async (updatedData: any) => {
+    //     if (!editingItem) return;
+    //     await dispatch(updateInventoryItem({ id: editingItem.id, data: updatedData }));
+    //     setShowEditModal(false);
+    //     setEditingItem(null);
+    //   };
     const fetchCategories = async () => {
         try {
             // const { data: { user } } = await supabase.auth.getUser();
@@ -106,7 +120,7 @@ export const Inventory: React.FC = () => {
                 cost: parseFloat(productForm.cost),
                 price: parseFloat(productForm.price),
                 sku: productForm.sku,
-                stock_quantity: parseInt(productForm.stock_quantity),
+                quantity: parseInt(productForm.quantity),
                 category_id: productForm.category_id || null,
                 // user_id: user.id,
                 updated_at: new Date().toISOString(),
@@ -137,20 +151,9 @@ export const Inventory: React.FC = () => {
         }
     };
 
-    const handleDelete = async (productId: string) => {
-        if (!confirm('Are you sure you want to delete this product?')) return;
-
-        try {
-            // const { error } = await supabase
-            //   .from('products')
-            //   .delete()
-            //   .eq('id', productId);
-
-            // if (error) throw error;
-            // fetchProducts();
-        } catch (error) {
-            console.error('Error deleting product:', error);
-            alert('Failed to delete product');
+    const handleDeleteProduct = async (id: string) => {
+        if (window.confirm('Are you sure you want to delete this item?')) {
+            await dispatch(deleteInventoryItem(id));
         }
     };
 
@@ -190,7 +193,7 @@ export const Inventory: React.FC = () => {
             cost: '',
             price: '',
             sku: '',
-            stock_quantity: '',
+            quantity: '',
             category_id: '',
         });
         setEditingProduct(null);
@@ -204,7 +207,7 @@ export const Inventory: React.FC = () => {
             cost: product.cost.toString(),
             price: product.price.toString(),
             sku: product.sku,
-            stock_quantity: product.stock_quantity.toString(),
+            quantity: product.quantity.toString(),
             category_id: product.category_id || '',
         });
         setEditingProduct(product);
@@ -221,11 +224,11 @@ export const Inventory: React.FC = () => {
 
         let matchesStock = true;
         if (stockFilter === 'in-stock') {
-            matchesStock = product.stock_quantity > 10;
+            matchesStock = product.quantity > 10;
         } else if (stockFilter === 'low-stock') {
-            matchesStock = product.stock_quantity > 0 && product.stock_quantity <= 10;
+            matchesStock = product.quantity > 0 && product.quantity <= 10;
         } else if (stockFilter === 'out-of-stock') {
-            matchesStock = product.stock_quantity === 0;
+            matchesStock = product.quantity === 0;
         }
 
         return matchesSearch && matchesCategory && matchesStock;
@@ -239,9 +242,9 @@ export const Inventory: React.FC = () => {
         return { label: 'In Stock', color: 'text-green-600 bg-green-100' };
     };
 
-    const inStockCount = products.filter(p => p.stock_quantity > 10).length;
-    const lowStockCount = products.filter(p => p.stock_quantity > 0 && p.stock_quantity <= 10).length;
-    const outOfStockCount = products.filter(p => p.stock_quantity === 0).length;
+    const inStockCount = products.filter(p => p.quantity > 10).length;
+    const lowStockCount = products.filter(p => p.quantity > 0 && p.quantity <= 10).length;
+    const outOfStockCount = products.filter(p => p.quantity === 0).length;
 
 
     return (
@@ -375,7 +378,7 @@ export const Inventory: React.FC = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {filteredProducts.map((product) => {
-                                const stockStatus = getStockStatus(product.stock_quantity);
+                                const stockStatus = getStockStatus(product.quantity);
                                 return (
                                     <tr key={product.id} className="hover:bg-gray-50">
                                         <td className="px-3 lg:px-6 py-4">
@@ -396,7 +399,7 @@ export const Inventory: React.FC = () => {
                                             {formatCurrency(product.price)}
                                         </td>
                                         <td className="px-3 lg:px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{product.stock_quantity}</div>
+                                            <div className="text-sm text-gray-900">{product.quantity}</div>
                                             <div className="lg:hidden">
                                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${stockStatus.color}`}>
                                                     {stockStatus.label}
@@ -417,7 +420,7 @@ export const Inventory: React.FC = () => {
                                                     <FiEdit2 className="h-4 w-4" />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDelete(product.id)}
+                                                    onClick={() => handleDeleteProduct(product.id)}
                                                     className="text-red-600 hover:text-red-900"
                                                 >
                                                     <BsTrash2 className="h-4 w-4" />
@@ -515,8 +518,8 @@ export const Inventory: React.FC = () => {
                                 <input
                                     type="number"
                                     required
-                                    value={productForm.stock_quantity}
-                                    onChange={(e) => setProductForm({ ...productForm, stock_quantity: e.target.value })}
+                                    value={productForm.quantity}
+                                    onChange={(e) => setProductForm({ ...productForm, quantity: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>

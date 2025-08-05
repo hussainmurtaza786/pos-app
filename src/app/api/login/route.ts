@@ -76,31 +76,30 @@ export async function POST(req: NextRequest) {
 
 
 
-// export async function PUT(req: NextRequest) {
-//   try {
-//     const body = await req.json();
-//     const { email, password } = body;
+export async function PUT(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { email, password } = body;
 
-//     if (!email || !password) {
-//       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
-//     }
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+    }
 
-//     const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-//     const createdUser = await prisma.user.create({
-//       data: {
-//         id: uuidv4(),
-//         email,
-//         password: hashedPassword,
-//       },
-//     });
+    const createdUser = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+      },
+    });
 
-//     return NextResponse.json(
-//       { message: 'User created successfully', user: { id: createdUser.id, email: createdUser.email } },
-//       { status: 201 }
-//     );
-//   } catch (err: any) {
-//     console.error('Error creating user:', err);
-//     return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
-//   }
-// }
+    return NextResponse.json(
+      { message: 'User created successfully', user: { id: createdUser.id, email: createdUser.email } },
+      { status: 201 }
+    );
+  } catch (err: any) {
+    console.error('Error creating user:', err);
+    return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
+  }
+}
