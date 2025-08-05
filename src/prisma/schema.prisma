@@ -25,7 +25,7 @@ model User {
 
   inventories Inventory[]
   orders      Order[]
-  returnOrders ReturnOrder[]
+  // returnOrders ReturnOrder[]
   expenses     Expense[]
   products    Product[]
   ReturnOrder ReturnOrder[]
@@ -44,6 +44,7 @@ model Product {
   createdBy   User   @relation(fields: [createdById], references: [id])
   createdById String
 
+  Category          Category[]
   Inventory            Inventory[]
   ProductInOrder       ProductInOrder[]
   ProductInReturnOrder ReturnOrderProduct[]
