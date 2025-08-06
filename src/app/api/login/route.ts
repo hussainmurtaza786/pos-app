@@ -1,15 +1,19 @@
-import { User } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import * as yup from 'yup';
 import bcrypt from 'bcryptjs';
 import prisma from '@/prisma/client';
-import { v4 as uuidv4 } from 'uuid';
+import { User } from '@prisma/client';
 
-const LoginSchema = yup.object({
-  email: yup.string().email().required(),
-  password: yup.string().required(),
-});
+const LoginSchema = yup
+  .object({
+    email: yup.string().email().nullable(),
+    phone: yup.string().matches(/^\+?\d{10,15}$/, 'Invalid phone number format'),
+    password: yup.string().required(),
+  })
+  .test('emailOrPhone', 'Email or phone is required', (value) => {
+    return !!value.email || !!value.phone;
+  });
 
 export type LoginInput = yup.InferType<typeof LoginSchema>;
 
@@ -22,20 +26,30 @@ export interface LoginOutput {
 
 interface UserJWT {
   id: string;
-  email: string;
-  type: 'User';
+  email: string | null;
+  type: 'Staff';
 }
 
+// ==========================
+// 🔐 POST - Login Handler
+// ==========================
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, password } = LoginSchema.validateSync(body, {
+
+    const { email, phone, password } = await LoginSchema.validate(body, {
       stripUnknown: true,
       abortEarly: false,
     });
 
-    const userDetails = await prisma.user.findUnique({
-      where: { email },
+    // ✅ Find user by email or phone
+    const userDetails = await prisma.user.findFirst({
+      where: {
+        OR: [
+          email ? { email } : undefined,
+          phone ? { phone } : undefined,
+        ].filter(Boolean) as any,
+      },
     });
 
     if (!userDetails) {
@@ -50,7 +64,7 @@ export async function POST(req: NextRequest) {
     const payload: UserJWT = {
       id: userDetails.id,
       email: userDetails.email,
-      type: 'User',
+      type: 'Staff',
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET!, {
@@ -70,36 +84,9 @@ export async function POST(req: NextRequest) {
     );
   } catch (error: any) {
     console.error('Login error:', error);
-    return NextResponse.json({ error: 'Login failed' }, { status: 400 });
-  }
-}
-
-
-
-export async function PUT(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { email, password } = body;
-
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const createdUser = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-      },
-    });
-
     return NextResponse.json(
-      { message: 'User created successfully', user: { id: createdUser.id, email: createdUser.email } },
-      { status: 201 }
+      { error: 'Login failed', details: error?.errors || error.message },
+      { status: 400 }
     );
-  } catch (err: any) {
-    console.error('Error creating user:', err);
-    return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
   }
 }
