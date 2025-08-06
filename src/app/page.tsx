@@ -2,7 +2,7 @@
 import { Dashboard } from '@/components/Dashboard';
 import Expenses from '@/components/Expenses';
 // import Expenses from '@/components/Expenses';
-import { Inventory } from '@/components/Inventory';
+// import { Inventory } from '@/components/Inventory';
 
 import { Layout } from '@/components/Layout';
 import { LoginForm } from '@/components/LoginForm';
@@ -13,6 +13,8 @@ import Returns from '@/components/Return';
 // import { Returns } from '@/components/Return';
 import React, { useState, useEffect } from 'react';
 import Sales from '@/components/Sales';
+import Products from '@/components/Product';
+import Inventory from '@/components/Inventory';
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -41,10 +43,12 @@ function App() {
         return <Sales />
       case 'orders':
         return <Orders />
-      case 'inventory':
-        return <Inventory />
+      case 'products':
+        return <Products />
       case 'returns':
         return <Returns />
+      case 'inventory':
+        return <Inventory />
       case 'reports':
         return <Reports />
       case 'expenses':
