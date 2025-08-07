@@ -22,10 +22,10 @@ authorizedApiClient.interceptors.request.use(
         const token = getCookie(AUTH_TOKEN_NAME)
         if (!token) {
             // alert('Session expired, login again')
-            showDialog({
-                title: "Request Failed", message: 'Session expired, login again', type: "error",
-                responseCallback() { window.location.reload() }
-            })
+            // showDialog({
+            //     title: "Request Failed", message: 'Session expired, login again', type: "error",
+            //     responseCallback() { window.location.reload() }
+            // })
         }
 
         config.headers['Authorization'] = `Bearer ${token}`;

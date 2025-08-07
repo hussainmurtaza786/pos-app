@@ -90,3 +90,56 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+
+export async function PUT(req: NextRequest) {
+  try {
+    const { email, password } = await req.json();
+
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: 'Email and password are required' },
+        { status: 400 }
+      );
+    }
+
+    // ✅ Check for existing user
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'User already exists' },
+        { status: 409 }
+      );
+    }
+
+    // ✅ Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // ✅ Create user (default role: Staff)
+    const createdUser = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        userRole: 'Staff', // 👈 Use default enum value if not passed
+      },
+    });
+
+    return NextResponse.json(
+      {
+        message: 'User created successfully',
+        user: {
+          id: createdUser.id,
+          email: createdUser.email,
+          userRole: createdUser.userRole,
+        },
+      },
+      { status: 201 }
+    );
+  } catch (err: any) {
+    console.error('Error creating user:', err);
+    return NextResponse.json(
+      { error: 'Failed to create user', details: err.message },
+      { status: 500 }
+    );
+  }
+}

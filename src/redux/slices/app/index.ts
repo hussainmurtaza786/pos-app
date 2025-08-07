@@ -1,18 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
-import createInventoryItem, { deleteInventoryItem, fetchInventory, updateInventoryItem } from '../thunks/inventoryApiThunk';
+import { addInventory, deleteInventoryById, getInventories, updateInventoryById } from './inventoryApiThunks';
+import { Inventory } from '@/prisma/customTypes';
 
-export interface InventoryItem {
-    id: string;
-    name: string;
-    quantity: number;
-    price: number;
-    cost: number;
-    category?: string;
-    sku: string;
-}
 
 interface InventoryState {
-    items: InventoryItem[];
+    items: Inventory[];
+    count?: number; // Optional count for total items, if needed
     loading: boolean;
     error: string | null;
 }
@@ -21,6 +14,7 @@ const initialState: InventoryState = {
     items: [],
     loading: false,
     error: null,
+    count: 0
 };
 const inventorySlice = createSlice({
     name: 'inventory',
@@ -29,28 +23,29 @@ const inventorySlice = createSlice({
     extraReducers: (builder) => {
         builder
             // FETCH
-            .addCase(fetchInventory.pending, (state) => {
+            .addCase(getInventories.pending, (state) => {
                 state.loading = true;
             })
-            .addCase(fetchInventory.fulfilled, (state, action) => {
-                state.items = action.payload;
+            .addCase(getInventories.fulfilled, (state, action) => {
+                state.items = action.payload.items;
+                state.count = action.payload.count;
                 state.loading = false;
             })
-            .addCase(fetchInventory.rejected, (state, action) => {
+            .addCase(getInventories.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
             })
             // CREATE
-            .addCase(createInventoryItem.fulfilled, (state, action) => {
+            .addCase(addInventory.fulfilled, (state, action) => {
                 state.items.push(action.payload);
             })
             // UPDATE
-            .addCase(updateInventoryItem.fulfilled, (state, action) => {
+            .addCase(updateInventoryById.fulfilled, (state, action) => {
                 const index = state.items.findIndex((item: any) => item.id === action.payload.id);
                 if (index !== -1) state.items[index] = action.payload;
             })
             // DELETE
-            .addCase(deleteInventoryItem.fulfilled, (state, action) => {
+            .addCase(deleteInventoryById.fulfilled, (state, action) => {
                 state.items = state.items.filter((item: any) => item.id !== action.payload);
             });
     },
