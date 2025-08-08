@@ -12,6 +12,7 @@ const AddProductSchema = yup.object({
   sku: yup.string().required(),
   description: yup.string().nullable(),
   price: yup.number().required(),
+  categoryId: yup.string().required(), // Optional category ID
 });
 
 const GetProductsSchema = yup.object({
@@ -67,7 +68,7 @@ export async function GET(req: NextRequest) {
           createdBy: {
             select: { id: true, email: true, phone: true },
           },
-          Category: true,
+          category: true
         },
         orderBy: { createdAt: 'desc' },
       }),

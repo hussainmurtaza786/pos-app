@@ -77,8 +77,8 @@ export const deleteInventoryById = createAsyncThunk(
       const response = await authorizedApiClient.delete<InventoryDeleteOutput>(
         `/api/inventory/${inventoryId}`
       );
-    //   return response.data;
-      return { id: inventoryId }
+      // return response.data;
+      // return { id: inventoryId }
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.response?.data || "Failed to delete inventory");
     }

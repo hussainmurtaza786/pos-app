@@ -43,7 +43,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
             phone: true,
           },
         },
-        Category: true,
+        category: true, // Include category relation
       },
     });
 

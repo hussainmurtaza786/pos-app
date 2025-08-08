@@ -3,12 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/redux/store';
-import {
-  addInventory,
-  getInventories,
-  updateInventoryById,
-  deleteInventoryById,
-} from '@/redux/slices/app/inventoryApiThunks';
+import { addInventory, getInventories, updateInventoryById, deleteInventoryById, } from '@/redux/slices/app/inventoryApiThunks';
 import { BiCheckCircle, BiPackage, BiPlus } from 'react-icons/bi';
 import { FiAlertTriangle } from 'react-icons/fi';
 
@@ -20,7 +15,7 @@ const Spinner = () => (
 
 const InventoryPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { items: inventory, loading } = useSelector((state: RootState) => state.inventory);
+  const { items: inventory, loading } = useSelector((state: RootState) => state.app.inventory);
 
   const [formData, setFormData] = useState({
     productId: '',
@@ -169,7 +164,7 @@ const InventoryPage: React.FC = () => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left">ID</th>
-              <th className="px-6 py-3 text-left">Name & SKU</th>
+              <th className="px-6 py-3 text-left">Name & Id</th>
               <th className="px-6 py-3 text-left">Purchased Qty</th>
               <th className="px-6 py-3 text-left">Available Qty</th>
               <th className="px-6 py-3 text-left">Price</th>
@@ -228,6 +223,7 @@ const InventoryPage: React.FC = () => {
                   placeholder="Enter Product ID"
                 />
               </div>
+              <label className="block text-sm font-medium mb-1">Name</label>
 
               <input
                 type="text"
@@ -237,6 +233,7 @@ const InventoryPage: React.FC = () => {
                 className="w-full border rounded-lg px-3 py-2"
                 placeholder="Name"
               />
+              <label className="block text-sm font-medium mb-1">Description</label>
 
               <textarea
                 value={formData.description}
@@ -246,22 +243,29 @@ const InventoryPage: React.FC = () => {
               />
 
               <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="number"
-                  required
-                  value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: +e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2"
-                  placeholder="Purchased Quantity"
-                />
-                <input
-                  type="number"
-                  required
-                  value={formData.purchasePrice}
-                  onChange={(e) => setFormData({ ...formData, purchasePrice: +e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2"
-                  placeholder="Cost Price"
-                />
+                <div>
+                  <label className="block text-sm font-medium mb-1">Quantity</label>
+                  <input
+                    type="number"
+                    required
+                    value={formData.quantity}
+                    onChange={(e) => setFormData({ ...formData, quantity: +e.target.value })}
+                    className="w-full border rounded-lg px-3 py-2"
+                    placeholder="Purchased Quantity"
+                  />
+                </div>
+                <div className=''>
+                  <label className="block text-sm font-medium mb-1">Purchase Price</label>
+
+                  <input
+                    type="number"
+                    required
+                    value={formData.purchasePrice}
+                    onChange={(e) => setFormData({ ...formData, purchasePrice: +e.target.value })}
+                    className="w-full border rounded-lg px-3 py-2"
+                    placeholder="Cost Price"
+                  />
+                </div>
               </div>
 
               {formMessage && (
