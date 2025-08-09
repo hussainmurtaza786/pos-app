@@ -14,8 +14,9 @@ const UpdateProductSchema = yup.object({
   id: yup.string().required(),
   name: yup.string().required(),
   sku: yup.string().required(),
-  description: yup.string().nullable(),
+  description: yup.string().required(),
   price: yup.number().required(),
+  categoryId: yup.string().required()
 });
 
 export type ProductPostInput = yup.InferType<typeof UpdateProductSchema>;
@@ -80,6 +81,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         sku: input.sku,
         description: input.description ?? '',
         price: input.price,
+        categoryId: input.categoryId
+
       },
     });
 

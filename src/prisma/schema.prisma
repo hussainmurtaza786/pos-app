@@ -44,8 +44,8 @@ model Product {
   createdBy   User   @relation(fields: [createdById], references: [id])
   createdById String
 
-  categoryId  String?
-  category    Category?  @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id])
 
   Inventory            Inventory[]
   ProductInOrder       ProductInOrder[]

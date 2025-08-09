@@ -12,7 +12,7 @@ const AddProductSchema = yup.object({
   sku: yup.string().required(),
   description: yup.string().nullable(),
   price: yup.number().required(),
-  categoryId: yup.string().required(), // Optional category ID
+  categoryId: yup.string().nullable(), // category is optional
 });
 
 const GetProductsSchema = yup.object({
@@ -37,9 +37,6 @@ export interface ProductsGetOutput {
   };
 }
 
-// -------------------------
-// GET: All products
-// -------------------------
 // -------------------------
 // GET: All products (with search via name or sku)
 // -------------------------
@@ -68,7 +65,7 @@ export async function GET(req: NextRequest) {
           createdBy: {
             select: { id: true, email: true, phone: true },
           },
-          category: true
+          category: true,
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -84,7 +81,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-
 // -------------------------
 // PUT: Create product
 // -------------------------
@@ -97,14 +93,21 @@ export async function PUT(req: NextRequest) {
 
     const createdById = '50934ed1-cbe2-4603-b1ed-7255f93bfd80'; // replace with token-based ID later
 
+    // Build data object dynamically to avoid type errors
+    const data: any = {
+      id: `prdct-${generateUniqueNumber()}`,
+      name: input.name,
+      sku: input.sku,
+      description: input.description ?? null,
+      price: input.price,
+      createdById,
+      categoryId:input.categoryId
+    };
+
     const newProduct = await prisma.product.create({
-      data: {
-        id: `prdct-${generateUniqueNumber()}`,
-        name: input.name,
-        sku: input.sku,
-        description: input.description ?? null,
-        price: input.price,
-        createdById,
+      data,
+      include: {
+        category: true,
       },
     });
 
