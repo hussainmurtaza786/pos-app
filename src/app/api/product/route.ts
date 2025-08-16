@@ -1,126 +1,135 @@
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/prisma/client';
-import * as yup from 'yup';
-import { Product } from '@prisma/client';
-import { generateUniqueNumber } from '../utils';
+import prisma from "@/prisma/client";
+import { NextRequest } from "next/server";
+import * as yup from "yup";
+import { generateUniqueNumber, parseQueryParams } from "../utils";
+// import { Product } from "@prisma/client";
+import { verifyAuthorization } from "@/utils";
+import { Product } from "@/prisma/customTypes";
 
-// -------------------------
-// SCHEMAS
-// -------------------------
+// =====================
+// Validation Schemas
+// =====================
 const AddProductSchema = yup.object({
-  name: yup.string().required(),
-  sku: yup.string().required(),
+  name: yup.string().required("Product name is required"),
+  sku: yup.string().required("SKU is required"),
   description: yup.string().nullable(),
-  price: yup.number().required(),
-  categoryId: yup.string().nullable(), // category is optional
+  price: yup.number().required("Price is required"),
+  categoryId: yup.string().required("Category ID is required"),
 });
-
-const GetProductsSchema = yup.object({
-  search: yup.string().nullable().default(null),
-});
-
-// -------------------------
-// TYPES
-// -------------------------
 export type ProductPutInput = yup.InferType<typeof AddProductSchema>;
 
 export interface ProductPutOutput {
   data: Product;
 }
 
-export type ProductsGetInput = yup.InferType<typeof GetProductsSchema>;
-
-export interface ProductsGetOutput {
-  data: {
-    items: Product[];
-    count: number;
-  };
-}
-
-// -------------------------
-// GET: All products (with search via name or sku)
-// -------------------------
-export async function GET(req: NextRequest) {
+export async function PUT(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const input = GetProductsSchema.validateSync(
-      Object.fromEntries(searchParams.entries()),
-      { stripUnknown: true, abortEarly: false }
-    );
-
-    const { search } = input;
-
-    const where: any = {};
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
-      ];
+    const { name, sku, description, price, categoryId, } =
+      AddProductSchema.validateSync(await req.json(), {
+        stripUnknown: true,
+        abortEarly: false,
+      });
+    const user = await verifyAuthorization(req);
+    if (!user.id) {
+      window.location.reload()
+      return Response.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
+    console.log('user ---->', user.id)
+    const product: Product = await prisma.product.create({
+      data: {
+        id: `pro-${generateUniqueNumber()}`,
+        name,
+        sku,
+        description,
+        price,
+        categoryId,
+        createdById: user.id,
+      },
+    });
 
-    const [items, count] = await prisma.$transaction([
-      prisma.product.findMany({
-        where,
-        include: {
-          createdBy: {
-            select: { id: true, email: true, phone: true },
-          },
-          category: true,
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.product.count({ where }),
-    ]);
-
-    return NextResponse.json({ data: { items, count } } as ProductsGetOutput, { status: 200 });
+    return Response.json({ data: product } as ProductPutOutput, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: 'Server Error', message: error.message },
+    if (error.errors)
+      return Response.json(
+        { error: "API input error", message: error.errors[0] },
+        { status: 400 }
+      );
+
+    return Response.json(
+      { error: "Something went wrong", message: error.message },
       { status: 500 }
     );
   }
 }
 
-// -------------------------
-// PUT: Create product
-// -------------------------
-export async function PUT(req: NextRequest) {
+// =====================
+// GET Products
+// =====================
+const GetProductsSchema = yup.object({
+  pageNumber: yup.number(),
+  pageSize: yup.number(),
+  search: yup.string(),
+  searchField: yup.string().oneOf<keyof Product>(["id", "name", "sku"]),
+});
+export type ProductsGetInput = yup.InferType<typeof GetProductsSchema>;
+
+export interface ProductsGetOutput {
+  data: {
+    count: number;
+    items: Product[];
+  };
+}
+
+export async function GET(req: NextRequest) {
   try {
-    const input = AddProductSchema.validateSync(await req.json(), {
-      abortEarly: false,
-      stripUnknown: true,
-    });
+    const { pageNumber = 1, pageSize = 10, search = "", searchField = "id" } =
+      GetProductsSchema.validateSync(parseQueryParams(req), {
+        stripUnknown: true,
+        abortEarly: false,
+      });
 
-    const createdById = '50934ed1-cbe2-4603-b1ed-7255f93bfd80'; // replace with token-based ID later
+    const where: { [k: string]: any } = {};
+    if (search && searchField === "id") {
+      where[searchField] = { contains: search.trim().toLowerCase() };
+    } else if (search) {
+      where[searchField] = { contains: search.trim(), mode: "insensitive" };
+    }
 
-    // Build data object dynamically to avoid type errors
-    const data: any = {
-      id: `prdct-${generateUniqueNumber()}`,
-      name: input.name,
-      sku: input.sku,
-      description: input.description ?? null,
-      price: input.price,
-      createdById,
-      categoryId:input.categoryId
-    };
+     const [products, count] = await prisma.$transaction([
+      prisma.product.findMany({
+        skip: (pageNumber - 1) * pageSize,
+        take: pageSize,
+        orderBy: { createdAt: "desc" },
+        where,
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          price: true,
+          description: true,
+          categoryId: true,   // 👈 ensures form can prefill
+          category: true,     // 👈 ensures table shows category name
+        },
+      }),
+      prisma.product.count({ where }),
+    ]);
 
-    const newProduct = await prisma.product.create({
-      data,
-      include: {
-        category: true,
-      },
-    });
-
-    return NextResponse.json({ data: newProduct } as ProductPutOutput, { status: 201 });
+    return Response.json(
+      { data: { count, items: products } } as ProductsGetOutput,
+      { status: 200 }
+    );
   } catch (error: any) {
-    if (error.errors) {
-      return NextResponse.json(
-        { error: 'Validation Error', message: error.errors[0] },
+    if (error.errors)
+      return Response.json(
+        { error: "API input error", message: error.errors[0] },
         { status: 400 }
       );
-    }
-    return NextResponse.json(
-      { error: 'Server Error', message: error.message },
+
+    return Response.json(
+      { error: "Something went wrong", message: error.message },
       { status: 500 }
     );
   }

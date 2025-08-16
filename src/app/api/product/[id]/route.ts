@@ -14,7 +14,7 @@ const UpdateProductSchema = yup.object({
   id: yup.string().required(),
   name: yup.string().required(),
   sku: yup.string().required(),
-  description: yup.string().required(),
+  description: yup.string().nullable(),
   price: yup.number().required(),
   categoryId: yup.string().required()
 });

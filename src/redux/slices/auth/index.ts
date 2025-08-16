@@ -3,7 +3,7 @@ import { User } from "@prisma/client";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface StateType {
-    userDetails: null | User
+    userDetails: Omit<User, 'password'> | null;
     isAuthenticated: Boolean
     authToken: null | string
 }

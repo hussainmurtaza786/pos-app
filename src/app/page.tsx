@@ -1,65 +1,50 @@
-'use client'
-import { Dashboard } from '@/components/Dashboard';
-import Expenses from '@/components/Expenses';
-// import Expenses from '@/components/Expenses';
-// import { Inventory } from '@/components/Inventory';
-
-import { Layout } from '@/components/Layout';
-import { LoginForm } from '@/components/LoginForm';
-import OrdersPage from '@/components/Sales';
-import Orders from '@/components/Orders';
-import { Reports } from '@/components/Reports';
-import Returns from '@/components/Return';
-// import { Returns } from '@/components/Return';
+'use client';
+import { Dashboard } from '@/tabs/Dashboard';
+import Expenses from '@/tabs/Expenses';
+import { Layout } from '@/tabs/Layout';
+import Orders from '@/tabs/Orders';
+import { Reports } from '@/tabs/Reports';
+import Returns from '@/tabs/Return';
 import React, { useState, useEffect } from 'react';
-import Sales from '@/components/Sales';
-import Products from '@/components/Product';
-import Inventory from '@/components/Inventory';
+import Sales from '@/tabs/Sales';
+import Products from '@/tabs/Product';
+import Inventory from '@/tabs/Inventory';
+import { getCookie } from '@/utils';
+import { AUTH_TOKEN_NAME, PAGES } from '@/app-config';
+import { useRouter } from 'next/navigation';
 
 function App() {
   const [loading, setLoading] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [activeTab, setActiveTab] = useState('dashboard');
+  const router = useRouter();
 
   useEffect(() => {
+    const token = getCookie(AUTH_TOKEN_NAME);
 
-    const token = localStorage.getItem('token');
-    if (token) {
-      setIsLoggedIn(true);
+    if (!token) {
+      router.replace(PAGES.Login.path); // Redirect to login
+      return;
     }
-    const timeout = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timeout);
-  }, []);
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-  };
+    setLoading(false); // Token exists, allow dashboard
+  }, [router]);
 
   const renderActiveComponent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard />
-      case 'sales':
-        return <Sales />
-      case 'orders':
-        return <Orders />
-      case 'products':
-        return <Products />
-      case 'returns':
-        return <Returns />
-      case 'inventory':
-        return <Inventory />
-      case 'reports':
-        return <Reports />
-      case 'expenses':
-        return <Expenses />
-      default:
-        return <Dashboard />
-
+      case 'dashboard': return <Dashboard />;
+      case 'sales': return <Sales />;
+      case 'orders': return <Orders />;
+      case 'products': return <Products />;
+      case 'returns': return <Returns />;
+      case 'inventory': return <Inventory />;
+      case 'reports': return <Reports />;
+      case 'expenses': return <Expenses />;
+      default: return <Dashboard />;
     }
   };
 
   if (loading) {
+    // Loader while checking token
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -67,15 +52,10 @@ function App() {
     );
   }
 
-  if (!isLoggedIn) {
-    return <LoginForm onLogin={handleLogin} />;
-  }
-
   return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab} onSignOut={() => setIsLoggedIn(false)}>
+    <Layout activeTab={activeTab} onTabChange={setActiveTab} onSignOut={() => router.push(PAGES.Login.path)}>
       {renderActiveComponent()}
     </Layout>
-
   );
 }
 

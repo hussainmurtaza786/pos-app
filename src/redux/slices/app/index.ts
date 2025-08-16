@@ -15,11 +15,13 @@ import {
 import { Inventory, Product } from '@/prisma/customTypes';
 import { Category } from '@prisma/client';
 import { addCategory, getCategories } from './categoryApiThunks ';
+import { ProductsGetInput } from '@/app/api/product/route';
 
 interface AdminAppState {
   product: {
     items: Product[];
     count: number;
+    input: ProductsGetInput,
     loading: boolean;
     error: string | null;
   };
@@ -43,6 +45,7 @@ const initialState: AdminAppState = {
     count: 0,
     loading: false,
     error: null,
+    input: { pageNumber: 1, pageSize: 10 }
   },
   inventory: {
     items: [],

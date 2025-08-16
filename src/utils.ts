@@ -1,6 +1,8 @@
 import axios from "axios";
-import { AUTH_TOKEN_NAME } from "./app-config";
-// import { showDialog } from "@/components/Dialog";
+import { AUTH_TOKEN_NAME } from "@/app-config";
+import { showDialog } from "@/components/Dialog";
+import jwt from "jsonwebtoken";
+import { NextRequest } from "next/server";
 
 export function getCookie(name: string) {
     const cookieArr = document.cookie.split('; ');
@@ -22,10 +24,10 @@ authorizedApiClient.interceptors.request.use(
         const token = getCookie(AUTH_TOKEN_NAME)
         if (!token) {
             // alert('Session expired, login again')
-            // showDialog({
-            //     title: "Request Failed", message: 'Session expired, login again', type: "error",
-            //     responseCallback() { window.location.reload() }
-            // })
+            showDialog({
+                title: "Request Failed", message: 'Session expired, login again', type: "error",
+                responseCallback() { window.location.reload() }
+            })
         }
 
         config.headers['Authorization'] = `Bearer ${token}`;
@@ -50,38 +52,27 @@ authorizedApiClient.interceptors.response.use(
 
 
 
+// utils/auth.ts
 
-function showDialog({ title, message, type = "info", responseCallback }: {
-  title: string;
-  message: string;
-  type?: "info" | "error" | "success" | "warning";
-  responseCallback?: () => void;
-}) {
-  // Remove existing dialog if any
-  const existing = document.getElementById('custom-dialog');
-  if (existing) existing.remove();
-
-  const dialog = document.createElement('div');
-  dialog.id = 'custom-dialog';
-  dialog.className = `
-    fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50
-  `;
-
-  dialog.innerHTML = `
-    <div class="bg-white rounded-lg shadow-lg max-w-sm w-full p-6 text-center">
-      <h2 class="text-xl font-semibold mb-2 text-gray-800">${title}</h2>
-      <p class="text-gray-600 mb-4">${message}</p>
-      <button id="dialog-ok-button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition">
-        OK
-      </button>
-    </div>
-  `;
-
-  document.body.appendChild(dialog);
-
-  const okBtn = document.getElementById('dialog-ok-button');
-  okBtn?.addEventListener('click', () => {
-    dialog.remove();
-    responseCallback?.();
-  });
+interface TokenPayload {
+  id: string; // Must match what you set when signing the token
+  email?: string;
+  role?: string;
 }
+
+export async function verifyAuthorization(req: NextRequest) {
+  const authHeader = req.headers.get("authorization");
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    throw new Error("Unauthorized");
+  }
+
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as TokenPayload;
+    return decoded; // { id: "...", email: "...", role: "..." }
+  } catch (err) {
+    throw new Error("Invalid or expired token");
+  }
+}
+
