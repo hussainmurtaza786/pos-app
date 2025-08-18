@@ -1,4 +1,4 @@
-import LoginForm from "@/tabs/login/LoginForm";
+import LoginForm from "@/app/login/LoginForm";
 import { Flex } from "@chakra-ui/react";
 
 interface LoginFormProps {

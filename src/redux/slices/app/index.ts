@@ -3,11 +3,13 @@ import {
   addInventory,
   deleteInventoryById,
   getInventories,
+  getInventoryById,
   updateInventoryById,
 } from './inventoryApiThunks';
 import {
   addProduct,
   deleteProductById,
+  getProductById,
   getProducts,
   updateProductById,
 } from './productApiThunks';
@@ -16,42 +18,48 @@ import { Inventory, Product } from '@/prisma/customTypes';
 import { Category } from '@prisma/client';
 import { addCategory, getCategories } from './categoryApiThunks ';
 import { ProductsGetInput } from '@/app/api/product/route';
+import { InventoriesGetInput } from '@/app/api/inventory/route';
+import { handlePending, handleReject } from '@/redux/helper';
 
 interface AdminAppState {
-  product: {
-    items: Product[];
-    count: number;
-    input: ProductsGetInput,
-    loading: boolean;
-    error: string | null;
-  };
   inventory: {
-    items: Inventory[];
-    count: number;
-    loading: boolean;
-    error: string | null;
-  };
+    items: Inventory[] | null,
+    count: number,
+    input: InventoriesGetInput,
+    itemFullDataById: { [id: string]: Inventory | undefined }
+  },
+  products: {
+    items: Product[] | null,
+    count: number,
+    input: ProductsGetInput,
+    itemFullDataById: { [id: string]: Product | undefined }
+  },
   category: {
     items: Category[];
     count: number;
     loading: boolean;
     error: string | null;
   };
+  fetchingStatus: {
+    getInventories: boolean
+    getProducts: boolean
+
+  },
+  error: {},
 }
 
 const initialState: AdminAppState = {
-  product: {
-    items: [],
+  products: {
+    items: null,
     count: 0,
-    loading: false,
-    error: null,
-    input: { pageNumber: 1, pageSize: 10 }
+    input: { pageNumber: 1, pageSize: 10 },
+    itemFullDataById: {}
   },
   inventory: {
-    items: [],
+    items: null,
     count: 0,
-    loading: false,
-    error: null,
+    input: { pageNumber: 1, pageSize: 10 },
+    itemFullDataById: {}
   },
   category: {
     items: [],
@@ -59,6 +67,12 @@ const initialState: AdminAppState = {
     loading: false,
     error: null,
   },
+  fetchingStatus: {
+    getInventories: false,
+    getProducts: false
+
+  },
+  error: {},
 };
 
 const adminAppSlice = createSlice({
@@ -66,69 +80,69 @@ const adminAppSlice = createSlice({
   initialState,
   reducers: {},
   extraReducers: (builder) => {
-    builder
-      // INVENTORY
-      .addCase(getInventories.pending, (state) => {
-        state.inventory.loading = true;
-      })
-      .addCase(getInventories.fulfilled, (state, action) => {
-        state.inventory.items = action.payload.items;
-        state.inventory.count = action.payload.count;
-        state.inventory.loading = false;
-      })
-      .addCase(getInventories.rejected, (state, action) => {
-        state.inventory.loading = false;
-        state.inventory.error = action.payload as string;
-      })
-      .addCase(addInventory.fulfilled, (state, action) => {
-        state.inventory.items.push(action.payload);
-        state.inventory.count += 1;
-      })
-      .addCase(updateInventoryById.fulfilled, (state, action) => {
-        const index = state.inventory.items.findIndex(
-          (item) => item.id === action.payload.id
-        );
-        if (index !== -1) {
-          state.inventory.items[index] = action.payload;
-        }
-      })
-      .addCase(deleteInventoryById.fulfilled, (state, action) => {
-        state.inventory.items = state.inventory.items.filter(
-          (item: any) => item.id !== action.payload
-        );
-      })
+    builder.addCase(getInventories.fulfilled, (state, { payload, meta: { arg } }) => {
+      state.fetchingStatus.getInventories = false;
+      state.inventory.items = payload.data.items;
+      state.inventory.count = payload.data.count;
+      state.inventory.input = { ...state.inventory.input, ...arg };
+    })
+    builder.addCase(getInventories.pending, handlePending("getInventories"))
+    builder.addCase(getInventories.rejected, handleReject("getInventories"))
+    builder.addCase(addInventory.fulfilled, (state, { payload, meta: { arg } }) => {
+      state.inventory.items?.unshift(payload.data);
+      if (state.inventory.items?.length === state.inventory.input.pageSize) {
+        state.inventory.items?.pop();
+      }
+      state.inventory.itemFullDataById[payload.data.id] = payload.data;
+      state.inventory.count++;
+    })
+    builder.addCase(deleteInventoryById.fulfilled, (state, { payload, meta: { arg } }) => {
+      state.inventory.items = state.inventory.items?.filter(item => item.id !== arg) || null;
+      delete state.inventory.itemFullDataById[payload.data.id]
+    })
+    builder.addCase(getInventoryById.fulfilled, (state, { payload, meta: { arg } }) => {
+      state.inventory.itemFullDataById[payload.data.id] = payload.data;
+    })
+    builder.addCase(updateInventoryById.fulfilled, (state, { payload, meta: { arg } }) => {
+      state.inventory.itemFullDataById[arg.id] = payload.data;
+      const index = state.inventory.items?.findIndex(item => item.id === arg.id);
+      if (typeof index === 'number' && index > -1) {
+        state.inventory.items![index] = payload.data;
+      }
+    })
 
-      // PRODUCTS
-      .addCase(getProducts.pending, (state) => {
-        state.product.loading = true;
-      })
-      .addCase(getProducts.fulfilled, (state, action) => {
-        state.product.items = action.payload.items;
-        state.product.count = action.payload.count;
-        state.product.loading = false;
-      })
-      .addCase(getProducts.rejected, (state, action) => {
-        state.product.loading = false;
-        state.product.error = action.payload as string;
-      })
-      .addCase(addProduct.fulfilled, (state, action) => {
-        state.product.items.unshift(action.payload);
-        state.product.count += 1;
-      })
-      .addCase(updateProductById.fulfilled, (state, action) => {
-        const index = state.product.items.findIndex(
-          (item) => item.id === action.payload.id
-        );
-        if (index !== -1) {
-          state.product.items[index] = action.payload;
-        }
-      })
-      .addCase(deleteProductById.fulfilled, (state, action) => {
-        state.product.items = state.product.items.filter(
-          (item) => item.id !== action.payload.id
-        );
-        state.product.count -= 1;
-      })
+    // PRODUCTS
+    builder.addCase(getProducts.fulfilled, (state, { payload, meta: { arg } }) => {
+      state.fetchingStatus.getProducts = false;
+      state.products.items = payload.data.items;
+      state.products.count = payload.data.count;
+      state.products.input = { ...state.products.input, ...arg };
+    })
+    builder.addCase(getProducts.pending, handlePending("getProducts"))
+    builder.addCase(getProducts.rejected, handleReject("getProducts"))
+
+    builder.addCase(addProduct.fulfilled, (state, { payload, meta: { arg } }) => {
+      state.products.items?.unshift(payload.data);
+      if (state.products.items?.length === state.products.input.pageSize) {
+        state.products.items?.pop();
+      }
+      state.products.itemFullDataById[payload.data.id] = payload.data;
+      state.products.count++;
+    })
+    builder.addCase(deleteProductById.fulfilled, (state, { payload, meta: { arg } }) => {
+      state.products.items = state.products.items?.filter(item => item.id !== arg) || null;
+      delete state.products.itemFullDataById[payload.data.id]
+    })
+    builder.addCase(getProductById.fulfilled, (state, { payload, meta: { arg } }) => {
+      state.products.itemFullDataById[payload.data.id] = payload.data;
+    })
+    builder.addCase(updateProductById.fulfilled, (state, { payload, meta: { arg } }) => {
+      state.products.itemFullDataById[arg.id] = payload.data;
+      const index = state.products.items?.findIndex(item => item.id === arg.id);
+      if (typeof index === 'number' && index > -1) {
+        state.products.items![index] = payload.data;
+      }
+    })
 
       // ✅ CATEGORIES
       .addCase(getCategories.pending, (state) => {

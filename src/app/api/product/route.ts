@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
       where[searchField] = { contains: search.trim(), mode: "insensitive" };
     }
 
-     const [products, count] = await prisma.$transaction([
+    const [products, count] = await prisma.$transaction([
       prisma.product.findMany({
         skip: (pageNumber - 1) * pageSize,
         take: pageSize,
@@ -110,8 +110,8 @@ export async function GET(req: NextRequest) {
           sku: true,
           price: true,
           description: true,
-          categoryId: true,   // 👈 ensures form can prefill
-          category: true,     // 👈 ensures table shows category name
+          categoryId: true,
+          category: { select: { id: true, name: true } },
         },
       }),
       prisma.product.count({ where }),

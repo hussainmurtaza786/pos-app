@@ -1,5 +1,5 @@
-'use client';
-import React, { useState } from 'react';
+"use client";
+import React from "react";
 import {
     Box,
     Flex,
@@ -8,16 +8,19 @@ import {
     VStack,
     HStack,
     Drawer,
-} from '@chakra-ui/react';
-import { logout } from '@/redux/slices/auth';
-import { CiLogout } from 'react-icons/ci';
-import { FaChartBar, FaFileInvoice, FaMoneyBillWave } from 'react-icons/fa';
-import { FiFileText, FiRotateCcw } from 'react-icons/fi';
-import { GoPackage } from 'react-icons/go';
-import { HiOutlineCube } from 'react-icons/hi';
-import { IoIosTrendingUp } from 'react-icons/io';
-import { useDispatch } from 'react-redux';
-import { AUTH_TOKEN_NAME } from '@/app-config';
+    CloseButton,
+    Portal,
+} from "@chakra-ui/react";
+import { RxHamburgerMenu } from "react-icons/rx";
+import { logout } from "@/redux/slices/auth";
+import { CiLogout } from "react-icons/ci";
+import { FaChartBar, FaFileInvoice, FaMoneyBillWave } from "react-icons/fa";
+import { FiFileText, FiRotateCcw } from "react-icons/fi";
+import { GoPackage } from "react-icons/go";
+import { HiOutlineCube } from "react-icons/hi";
+import { IoIosTrendingUp } from "react-icons/io";
+import { useDispatch } from "react-redux";
+import { AUTH_TOKEN_NAME } from "@/app-config";
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -32,25 +35,23 @@ export const Layout: React.FC<LayoutProps> = ({
     onTabChange,
     onSignOut,
 }) => {
-    const [isDrawerOpen, setDrawerOpen] = useState(false);
     const dispatch = useDispatch();
 
     const handleSignOut = () => {
-        // localStorage.removeItem('token');
         document.cookie = `${AUTH_TOKEN_NAME}=; Max-Age=0; path=/;`;
         dispatch(logout());
         onSignOut();
     };
 
     const navigation = [
-        { id: 'dashboard', label: 'Dashboard', icon: <FaChartBar size={18} /> },
-        { id: 'sales', label: 'Sales', icon: <FaFileInvoice size={18} /> },
-        { id: 'orders', label: 'Orders', icon: <FaFileInvoice size={18} /> },
-        { id: 'expenses', label: 'Expenses', icon: <FaMoneyBillWave size={18} /> },
-        { id: 'inventory', label: 'Inventory', icon: <HiOutlineCube size={18} /> },
-        { id: 'products', label: 'Product', icon: <GoPackage size={18} /> },
-        { id: 'returns', label: 'Returns', icon: <FiRotateCcw size={18} /> },
-        { id: 'reports', label: 'Reports', icon: <FiFileText size={18} /> },
+        { id: "dashboard", label: "Dashboard", icon: <FaChartBar size={18} /> },
+        { id: "sales", label: "Sales", icon: <FaFileInvoice size={18} /> },
+        { id: "orders", label: "Orders", icon: <FaFileInvoice size={18} /> },
+        { id: "expenses", label: "Expenses", icon: <FaMoneyBillWave size={18} /> },
+        { id: "inventory", label: "Inventory", icon: <HiOutlineCube size={18} /> },
+        { id: "products", label: "Product", icon: <GoPackage size={18} /> },
+        { id: "returns", label: "Returns", icon: <FiRotateCcw size={18} /> },
+        { id: "reports", label: "Reports", icon: <FiFileText size={18} /> },
     ];
 
     const SidebarContent = () => (
@@ -62,6 +63,7 @@ export const Layout: React.FC<LayoutProps> = ({
             borderColor="gray.200"
             h="full"
         >
+            {/* Logo/Header */}
             <Flex
                 p={6}
                 borderBottomWidth="1px"
@@ -69,7 +71,13 @@ export const Layout: React.FC<LayoutProps> = ({
                 align="center"
                 gap={3}
             >
-                <Flex p={2} bg="blue.600" rounded="lg" align="center" justify="center">
+                <Flex
+                    p={2}
+                    bg="blue.600"
+                    rounded="lg"
+                    align="center"
+                    justify="center"
+                >
                     <IoIosTrendingUp size={24} color="white" />
                 </Flex>
                 <Text fontSize="xl" fontWeight="bold" color="gray.900">
@@ -77,6 +85,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 </Text>
             </Flex>
 
+            {/* Nav items */}
             <Box px={3} mt={4}>
                 {navigation.map((item) => {
                     const isActive = activeTab === item.id;
@@ -90,32 +99,30 @@ export const Layout: React.FC<LayoutProps> = ({
                             fontWeight="medium"
                             mb={1}
                             rounded="lg"
-                            color={isActive ? 'blue.700' : 'gray.600'}
-                            bg={isActive ? 'blue.100' : 'transparent'}
+                            color={isActive ? "blue.700" : "gray.600"}
+                            bg={isActive ? "blue.100" : "transparent"}
                             _hover={{
-                                bg: isActive ? 'blue.100' : 'gray.100',
-                                color: isActive ? 'blue.700' : 'gray.900',
+                                bg: isActive ? "blue.100" : "gray.100",
+                                color: isActive ? "blue.700" : "gray.900",
                             }}
                         >
-                            {item.icon}
-                            &nbsp;
-                            {item.label}
+                            {item.icon}&nbsp;{item.label}
                         </Button>
                     );
                 })}
             </Box>
 
+            {/* Sign out */}
             <Box mt="auto" p={3}>
                 <Button
                     onClick={handleSignOut}
                     w="full"
                     justifyContent="flex-start"
-                    // leftIcon={<CiLogout size={18} />}
                     fontSize="sm"
                     fontWeight="medium"
                     color="red.600"
                     variant="ghost"
-                    _hover={{ bg: 'red.50', color: 'red.700' }}
+                    _hover={{ bg: "red.50", color: "red.700" }}
                     rounded="lg"
                 >
                     <CiLogout size={18} />
@@ -128,75 +135,15 @@ export const Layout: React.FC<LayoutProps> = ({
     return (
         <Flex minH="100vh" bg="gray.50" position="relative">
             {/* Desktop Sidebar */}
-            <Box display={{ base: 'none', lg: 'block' }}>
+            <Box display={{ base: "none", lg: "block" }}>
                 <SidebarContent />
             </Box>
 
-            {/* Mobile Drawer (Chakra UI v3 API) */}
-            <Drawer.Root
-                open={isDrawerOpen}
-                onOpenChange={(open: any) => setDrawerOpen(open)}
-            >
-                <Drawer.Backdrop />
-                <Drawer.Trigger asChild>
-                    <Button
-                        display={{ base: 'flex', lg: 'none' }}
-                        p={2}
-                        variant="ghost"
-                        color="gray.600"
-                        _hover={{ color: 'gray.900', bg: 'gray.100' }}
-                    >
-                        <svg
-                            width="24"
-                            height="24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            viewBox="0 0 24 24"
-                        >
-                            <path d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </Button>
-                </Drawer.Trigger>
-                <Drawer.Positioner>
-                    <Drawer.Content maxW="64">
-                        <Drawer.CloseTrigger />
-                        <Drawer.Header p={0}>
-                            <Flex
-                                p={6}
-                                borderBottomWidth="1px"
-                                borderColor="gray.200"
-                                align="center"
-                                gap={3}
-                            >
-                                <Flex
-                                    p={2}
-                                    bg="blue.600"
-                                    rounded="lg"
-                                    align="center"
-                                    justify="center"
-                                >
-                                    <IoIosTrendingUp size={24} color="white" />
-                                </Flex>
-                                <Text fontSize="xl" fontWeight="bold" color="gray.900">
-                                    POS System
-                                </Text>
-                            </Flex>
-                        </Drawer.Header>
-                        <Drawer.Body p={0}>
-                            <SidebarContent />
-                        </Drawer.Body>
-                    </Drawer.Content>
-                </Drawer.Positioner>
-            </Drawer.Root>
-
             {/* Main Content */}
             <Flex flex="1" direction="column" overflow="hidden">
-                {/* Mobile Header */}
+                {/* Mobile Topbar */}
                 <Flex
-                    display={{ base: 'flex', lg: 'none' }}
+                    display={{ base: "flex", lg: "none" }}
                     bg="white"
                     borderBottomWidth="1px"
                     borderColor="gray.200"
@@ -205,6 +152,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     align="center"
                     justify="space-between"
                 >
+                    {/* Left: POS System */}
                     <HStack>
                         <Flex
                             p={1.5}
@@ -219,6 +167,40 @@ export const Layout: React.FC<LayoutProps> = ({
                             POS System
                         </Text>
                     </HStack>
+
+                    {/* Right: Hamburger inside Drawer.Trigger */}
+                    <Drawer.Root placement="left">
+                        <Drawer.Trigger asChild>
+                            <Button
+                                variant="ghost"
+                                p={2}
+                                color="gray.700"
+                                _hover={{ bg: "gray.100" }}
+                            >
+                                <RxHamburgerMenu size={24} />
+                            </Button>
+                        </Drawer.Trigger>
+
+                        <Portal>
+                            <Drawer.Backdrop />
+                            <Drawer.Positioner>
+                                <Drawer.Content maxW="64">
+                                    <Drawer.Header
+                                        borderBottomWidth="1px"
+                                        borderColor="gray.200"
+                                        position="relative"
+                                    >
+                                        <Drawer.CloseTrigger asChild>
+                                            <CloseButton size="sm" position="absolute" top={3} right={3} />
+                                        </Drawer.CloseTrigger>
+                                    </Drawer.Header>
+                                    <Drawer.Body p={0}>
+                                        <SidebarContent />
+                                    </Drawer.Body>
+                                </Drawer.Content>
+                            </Drawer.Positioner>
+                        </Portal>
+                    </Drawer.Root>
                 </Flex>
 
                 {/* Page Content */}

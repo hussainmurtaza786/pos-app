@@ -23,6 +23,13 @@ export interface CategoriesGetOutput {
   data: Category[];
 }
 
+const GetCategorySchema = yup.object({
+  pageNumber: yup.number(),
+  pageSize: yup.number(),
+  search: yup.string(),
+  searchField: yup.string().oneOf<keyof Category>(["id", 'name',]),
+})
+export type CategoriesGetInput = yup.InferType<typeof GetCategorySchema>
 // -------------------------
 // GET: Get all categories
 // -------------------------

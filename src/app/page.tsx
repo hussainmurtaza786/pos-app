@@ -7,11 +7,12 @@ import { Reports } from '@/tabs/Reports';
 import Returns from '@/tabs/Return';
 import React, { useState, useEffect } from 'react';
 import Sales from '@/tabs/Sales';
-import Products from '@/tabs/Product';
-import Inventory from '@/tabs/Inventory';
+
 import { getCookie } from '@/utils';
 import { AUTH_TOKEN_NAME, PAGES } from '@/app-config';
 import { useRouter } from 'next/navigation';
+import Inventory from '@/tabs/inventoryTab';
+import Product from '@/tabs/productTab';
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -34,7 +35,7 @@ function App() {
       case 'dashboard': return <Dashboard />;
       case 'sales': return <Sales />;
       case 'orders': return <Orders />;
-      case 'products': return <Products />;
+      case 'products': return <Product />;
       case 'returns': return <Returns />;
       case 'inventory': return <Inventory />;
       case 'reports': return <Reports />;

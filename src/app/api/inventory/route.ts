@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/prisma/client';
-import * as yup from 'yup';
-import { Product } from '@prisma/client';
-import { generateUniqueNumber } from '../utils';
-import { Inventory } from '@/prisma/customTypes';
+import prisma from "@/prisma/client";
+import { NextRequest } from "next/server";
+import * as yup from "yup";
+import { generateUniqueNumber, parseQueryParams } from "../utils";
+import { verifyAuthorization } from "@/utils";
+import { Inventory } from "@/prisma/customTypes";
 
-// -------------------------
-// SCHEMAS
-// -------------------------
+// =====================
+// Validation Schemas
+// =====================
 const AddInventorySchema = yup.object({
   productId: yup.string().required(),
   name: yup.string().required(),
@@ -15,109 +15,125 @@ const AddInventorySchema = yup.object({
   quantity: yup.number().required(),
   purchasePrice: yup.number().required(),
 });
-
-const GetInventoriesSchema = yup.object({
-    searchField: yup.string().oneOf<keyof Product>(['name', 'sku']),
-
-});
-
-// -------------------------
-// TYPES
-// -------------------------
 export type InventoryPutInput = yup.InferType<typeof AddInventorySchema>;
 
 export interface InventoryPutOutput {
   data: Inventory;
 }
 
+export async function PUT(req: NextRequest) {
+  try {
+    const { name, productId, description, quantity, purchasePrice } =
+      AddInventorySchema.validateSync(await req.json(), {
+        stripUnknown: true,
+        abortEarly: false,
+      });
+    const user = await verifyAuthorization(req);
+    if (!user.id) {
+      return Response.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+    console.log('user ---->', user.id)
+    const inventory: Inventory = await prisma.inventory.create({
+      data: {
+        id: `inv-${generateUniqueNumber()}`,
+        name,
+        availableQuantity: quantity,
+        purchasedQuantity: quantity,
+        purchasePrice,
+        description,
+        productId,
+        createdById: user.id,
+      },
+    });
+
+    return Response.json({ data: inventory } as InventoryPutOutput, { status: 201 });
+  } catch (error: any) {
+    if (error.errors)
+      return Response.json(
+        { error: "API input error", message: error.errors[0] },
+        { status: 400 }
+      );
+
+    return Response.json(
+      { error: "Something went wrong", message: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// =====================
+// GET 
+// =====================
+const GetInventoriesSchema = yup.object({
+  pageNumber: yup.number(),
+  pageSize: yup.number(),
+  search: yup.string(),
+  searchField: yup.string().oneOf<keyof Inventory>(["id", "name", "product"]),
+});
 export type InventoriesGetInput = yup.InferType<typeof GetInventoriesSchema>;
 
 export interface InventoriesGetOutput {
   data: {
-    items: Inventory[];
     count: number;
+    items: Inventory[];
   };
 }
 
-// -------------------------
-// GET: All inventory (no pagination)
-// -------------------------
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const input = GetInventoriesSchema.validateSync(
-      Object.fromEntries(searchParams.entries()),
-      { stripUnknown: true, abortEarly: false }
-    );
+    const { pageNumber = 1, pageSize = 10, search = "", searchField = "id" } =
+      GetInventoriesSchema.validateSync(parseQueryParams(req), {
+        stripUnknown: true,
+        abortEarly: false,
+      });
 
-    const { searchField } = input;
-
-    const where: any = {};
-    if (searchField) {
-      where.name = { contains: searchField, mode: 'insensitive' };
+    const where: { [k: string]: any } = {};
+    if (search && searchField === "id") {
+      where[searchField] = { contains: search.trim().toLowerCase() };
+    } else if (search) {
+      where[searchField] = { contains: search.trim(), mode: "insensitive" };
     }
 
-    const [items, count] = await prisma.$transaction([
+    const [inventories, count] = await prisma.$transaction([
       prisma.inventory.findMany({
+        skip: (pageNumber - 1) * pageSize,
+        take: pageSize,
+        orderBy: { createdAt: "desc" },
         where,
-        include: {
-          product: true,
-          createdBy: {
-            select: { id: true, email: true, phone: true },
-          },
+        select: {
+          id: true,
+          name: true,
+          availableQuantity: true,
+          purchasedQuantity: true,
+          purchasePrice: true,
+          description: true,
+          productId: true,
         },
-        orderBy: { createdAt: 'desc' },
       }),
       prisma.inventory.count({ where }),
     ]);
 
-    return NextResponse.json({ data: { items, count } } as InventoriesGetOutput, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: 'Server Error', message: error.message },
-      { status: 500 }
+    return Response.json(
+      { data: { count, items: inventories } } as InventoriesGetOutput,
+      { status: 200 }
     );
-  }
-}
-
-// -------------------------
-// PUT: Create inventory
-// -------------------------
-export async function PUT(req: NextRequest) {
-  try {
-    const input = AddInventorySchema.validateSync(await req.json(), {
-      abortEarly: false,
-      stripUnknown: true,
-    });
-
-    // TODO: Replace below with actual logged-in user's ID
-    const createdById = '50934ed1-cbe2-4603-b1ed-7255f93bfd80'; // e.g. from token or session
-
-    const newInventory = await prisma.inventory.create({
-      data: {
-        id: `invtry-${generateUniqueNumber()}`,
-        name: input.name,
-        description: input.description ?? null,
-        purchasedQuantity: input.quantity,
-        availableQuantity: input.quantity,
-        purchasePrice: input.purchasePrice,
-        productId: input.productId ?? '22',
-        createdById,
-      },
-    });
-
-    return NextResponse.json({ data: newInventory } as InventoryPutOutput, { status: 201 });
   } catch (error: any) {
-    if (error.errors) {
-      return NextResponse.json(
-        { error: 'Validation error', message: error.errors[0] },
+    if (error.errors)
+      return Response.json(
+        { error: "API input error", message: error.errors[0] },
         { status: 400 }
       );
-    }
 
-    return NextResponse.json(
-      { error: 'Server Error', message: error.message },
+    return Response.json(
+      { error: "Something went wrong", message: error.message },
       { status: 500 }
     );
   }
 }
+
+
+
+

@@ -4,15 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { BiPlus } from 'react-icons/bi';
 import { FiEdit2 } from 'react-icons/fi';
 import { BsTrash2 } from 'react-icons/bs';
-import {
-  Box,
-  Button,
-  Flex,
-  Heading,
-  Text,
-  IconButton,
-  Input,
-} from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Text, IconButton, Input, } from '@chakra-ui/react';
 import Table from '@/components/Table';
 import { useDispatch, useSelector } from 'react-redux';
 import { Product } from '@/prisma/customTypes';
@@ -25,10 +17,8 @@ import SearchProduct from './common/SearchProduct';
 const Products: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
 
-  const { items: products, loading, count, input } = useSelector((state: RootState) => state.app.product);
-  const { items: categories, loading: categoriesLoading } = useSelector(
-    (state: RootState) => state.app.category
-  );
+  const { items: products, count, input } = useSelector((state: RootState) => state.app.products);
+  const { items: categories, loading: categoriesLoading } = useSelector( (state: RootState) => state.app.category  );
 
   const [showModal, setShowModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -129,20 +119,10 @@ const Products: React.FC = () => {
             align: 'left',
             format: (val, row) => (
               <Flex gap={2}>
-                <IconButton
-                  aria-label="Edit"
-                  size="sm"
-                  colorScheme="blue"
-                  onClick={() => openEditModal(row)}
-                >
+                <IconButton aria-label="Edit" size="sm" colorScheme="blue" onClick={() => openEditModal(row)}>
                   <FiEdit2 />
                 </IconButton>
-                <IconButton
-                  aria-label="Delete"
-                  size="sm"
-                  colorScheme="red"
-                  onClick={() => handleDelete(val)}
-                >
+                <IconButton aria-label="Delete" size="sm" colorScheme="red" onClick={() => handleDelete(val)}>
                   <BsTrash2 />
                 </IconButton>
               </Flex>
@@ -159,23 +139,8 @@ const Products: React.FC = () => {
 
       {/* Product Modal (Custom) */}
       {showModal && (
-        <Flex
-          position="fixed"
-          inset="0"
-          bg="blackAlpha.600"
-          justify="center"
-          align="center"
-          zIndex="1000"
-        >
-          <Box
-            bg="white"
-            borderRadius="xl"
-            maxW="md"
-            w="full"
-            maxH="90vh"
-            overflowY="auto"
-            p={6}
-          >
+        <Flex position="fixed" inset="0" bg="blackAlpha.600" justify="center" align="center" zIndex="1000">
+          <Box bg="white" borderRadius="xl" maxW="md" w="full" maxH="90vh" overflowY="auto" p={6}>
             <Heading fontSize="lg" mb={4}>
               {editingProductId ? 'Edit Product' : 'Add New Product'}
             </Heading>
@@ -197,12 +162,7 @@ const Products: React.FC = () => {
                 { type: 'submit', name: 'submit-btn', label: editingProductId ? 'Update Product' : 'Add Product', fieldArea: 12 },
               ]}
             />
-            <Button
-              mt={3}
-              w="full"
-              variant="outline"
-              onClick={() => setShowModal(false)}
-            >
+            <Button mt={3} w="full" variant="outline" onClick={() => setShowModal(false)}>
               Cancel
             </Button>
           </Box>
@@ -211,30 +171,12 @@ const Products: React.FC = () => {
 
       {/* Category Modal (Custom) */}
       {showCategoryModal && (
-        <Flex
-          position="fixed"
-          inset="0"
-          bg="blackAlpha.600"
-          justify="center"
-          align="center"
-          zIndex="1000"
-        >
-          <Box
-            bg="white"
-            borderRadius="xl"
-            maxW="sm"
-            w="full"
-            p={6}
-          >
+        <Flex position="fixed" inset="0" bg="blackAlpha.600" justify="center" align="center" zIndex="1000">
+          <Box bg="white" borderRadius="xl" maxW="sm" w="full" p={6}>
             <Heading fontSize="lg" mb={4}>
               Add New Category
             </Heading>
-            <Input
-              placeholder="Enter category name"
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
-              mb={3}
-            />
+            <Input placeholder="Enter category name" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} mb={3} />
             <Flex gap={2}>
               <Button colorScheme="blue" flex="1" onClick={handleAddCategory}>
                 Add Category
