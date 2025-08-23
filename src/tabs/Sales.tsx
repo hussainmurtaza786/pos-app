@@ -1,29 +1,18 @@
+'use client';
 import React, { useMemo, useState } from "react";
-import {
-  Box,
-  Flex,
-  Stack,
-  Heading,
-  Text,
-  Input,
-  Badge,
-  IconButton,
-  Button,
-  HStack,
-  VStack,
-  Spacer,
-} from "@chakra-ui/react";
+import { Box, Flex, Stack, Heading, Text, Input, Badge, IconButton, Button, HStack, VStack, Spacer, } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster"
 import { BiMinus, BiPlus, BiX } from "react-icons/bi";
 import { CgShoppingCart } from "react-icons/cg";
+import { useDispatch } from "react-redux";
+import { Product as PrismaProduct, Status } from "@prisma/client";
+import SearchProduct from "./common/SearchProduct";
+import type { OrderPutInput } from "@/app/api/order/route";
+import { addOrder } from "@/redux/slices/app/orderApiThunk";
 
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  cost: number;
-  stock_quantity: number;
-  category_id: string;
-}
+// Use Prisma Product directly
+type Product = PrismaProduct;
+
 interface CartItem {
   product: Product;
   quantity: number;
@@ -31,54 +20,27 @@ interface CartItem {
 }
 
 const currency = (n: number) => `${n.toFixed(2)}rs`;
-const PAGE_SIZE = 5;
 
 const Order: React.FC = () => {
-  // Sample data (11 products to test pagination: 10 on page 1, 1 on page 2)
-  const [products] = useState<Product[]>([
-    { id: "1",  name: "Sample Product 1",  price: 100, cost: 60,  stock_quantity: 10, category_id: "a" },
-    { id: "2",  name: "Sample Product 2",  price: 150, cost: 80,  stock_quantity: 5,  category_id: "b" },
-    { id: "3",  name: "Sample Product 3",  price: 80,  cost: 50,  stock_quantity: 12, category_id: "c" },
-    { id: "4",  name: "Sample Product 4",  price: 60,  cost: 35,  stock_quantity: 8,  category_id: "d" },
-    { id: "5",  name: "Sample Product 5",  price: 120, cost: 70,  stock_quantity: 6,  category_id: "e" },
-    { id: "6",  name: "Sample Product 6",  price: 200, cost: 130, stock_quantity: 4,  category_id: "f" },
-    { id: "7",  name: "Sample Product 7",  price: 50,  cost: 25,  stock_quantity: 20, category_id: "g" },
-    { id: "8",  name: "Sample Product 8",  price: 95,  cost: 55,  stock_quantity: 15, category_id: "h" },
-    { id: "9",  name: "Sample Product 9",  price: 175, cost: 110, stock_quantity: 7,  category_id: "i" },
-    { id: "10", name: "Sample Product 10", price: 40,  cost: 20,  stock_quantity: 30, category_id: "j" },
-    { id: "11", name: "Sample Product 11", price: 130, cost: 85,  stock_quantity: 9,  category_id: "k" },
-  ]);
+  const dispatch = useDispatch<any>();
 
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [page, setPage] = useState(1);
-
   const [discountValue, setDiscountValue] = useState<number | "">("");
   const [amountReceived, setAmountReceived] = useState<number | "">("");
+  const [submitting, setSubmitting] = useState(false);
+  const [description, setDescription] = useState<string>("");
 
   // fixed colors (no color mode)
   const cardBg = "white";
   const borderCol = "gray.200";
 
-  const filteredProducts = useMemo(
-    () => products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())),
-    [products, searchTerm]
-  );
-
-  // Pagination
-  const totalProducts = filteredProducts.length;
-  const totalPages = Math.max(1, Math.ceil(totalProducts / PAGE_SIZE));
-  const startIndex = (page - 1) * PAGE_SIZE;
-  const endIndex = Math.min(startIndex + PAGE_SIZE, totalProducts);
-  const pageItems = filteredProducts.slice(startIndex, endIndex);
-
+  // ---- Cart ops ----
   const addToCart = (product: Product) => {
-    if (product.stock_quantity <= 0) return;
     const existing = cart.find(i => i.product.id === product.id);
     if (existing) {
-      if (existing.quantity < product.stock_quantity) {
-        setCart(cart.map(i => (i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i)));
-      }
+      setCart(cart.map(i =>
+        i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
+      ));
     } else {
       setCart([...cart, { product, quantity: 1, sellPrice: product.price }]);
     }
@@ -91,7 +53,6 @@ const Order: React.FC = () => {
           if (i.product.id !== productId) return i;
           const nextQty = i.quantity + change;
           if (nextQty <= 0) return null;
-          if (nextQty > i.product.stock_quantity) return i;
           return { ...i, quantity: nextQty };
         })
         .filter(Boolean) as CartItem[]
@@ -101,7 +62,9 @@ const Order: React.FC = () => {
   const updateSellPrice = (productId: string, value: string) => {
     const num = Number(value);
     if (Number.isNaN(num)) return;
-    setCart(cart.map(i => (i.product.id === productId ? { ...i, sellPrice: Math.max(0, num) } : i)));
+    setCart(cart.map(i =>
+      i.product.id === productId ? { ...i, sellPrice: Math.max(0, num) } : i
+    ));
   };
 
   const removeFromCart = (productId: string) =>
@@ -112,81 +75,69 @@ const Order: React.FC = () => {
     [cart]
   );
 
-  // Discount is AMOUNT only (clamped between 0 and subtotal)
   const discountNumeric =
     discountValue === "" ? 0 : Math.max(0, Math.min(subtotal, discountValue));
 
   const totalAfterDiscount = Math.max(0, subtotal - discountNumeric);
+
   const changeToReturn =
     amountReceived === "" ? 0 : Math.max(0, amountReceived - totalAfterDiscount);
 
+  // ---- Submit with status ----
+  const handleSubmit = async (status: Status) => {
+    if (cart.length === 0) {
+      toaster.create({ type: "warning", title: "Cart is empty", closable: true });
+      return;
+    }
+    if (amountReceived === "" || isNaN(Number(amountReceived))) {
+      toaster.create({ type: "warning", title: "Enter amount received", closable: true });
+      return;
+    }
+    if (Number(amountReceived) <= subtotal) {
+      toaster.create({ type: "error", title: "AmountReceived should be greater ", closable: true });
+      return;
+    }
+
+    const payload: OrderPutInput = {
+      description,
+      discount: discountNumeric,
+      status,
+      amountReceived: Number(amountReceived),
+      products: cart.map(i => ({
+        productId: i.product.id,
+        quantity: i.quantity,
+        sellPrice: i.sellPrice,
+      })),
+    };
+
+    try {
+      setSubmitting(true);
+      await dispatch(addOrder(payload)).unwrap();
+      toaster.create({ type: "success", title: "Order created", closable: true });
+      // Clear cart & totals
+      setCart([]);
+      setDiscountValue("");
+      setAmountReceived("");
+    } catch (err: any) {
+      toaster.create({
+        description: err?.message || "Please try again",
+        type: "error", title: "Failed to create order",
+        closable: true,
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <Flex p={{ base: 4, lg: 6 }} gap={{ base: 4, lg: 6 }} direction={{ base: "column", lg: "row" }} h="full">
-      {/* Left: Boxed product list with search */}
+      {/* Left: Product search */}
       <Box flex="1">
         <Heading size="lg" mb={1}>Order</Heading>
-        <Text color="gray.500" mb={4}>Browse and add products to the cart</Text>
+        <Text color="gray.500" mb={4}>Search and add products to the cart</Text>
 
         <Box bg={cardBg} border="1px solid" borderColor={borderCol} rounded="xl" p={4}>
-          <Stack mb={4}>
-            <Text fontSize="sm" fontWeight="medium" mb={2}>Product Search</Text>
-            <Input
-              id="product-search"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(1);
-              }}
-            />
-          </Stack>
-
-          <Stack>
-            {pageItems.map(product => (
-              <Flex
-                key={product.id}
-                p={4}
-                bg={cardBg}
-                border="1px solid"
-                borderColor={borderCol}
-                rounded="md"
-                align="center"
-                justify="space-between"
-                _notFirst={{ mt: 2 }}
-              >
-                <Box>
-                  <Text fontWeight="semibold">{product.name}</Text>
-                  <Text fontSize="sm" color="gray.500">Stock: {product.stock_quantity}</Text>
-                  <Text fontWeight="semibold" color="green.600">{currency(product.price)}</Text>
-                </Box>
-                <IconButton
-                  aria-label="Add to cart"
-                  icon={<BiPlus size={18} />}
-                  bg="blue.600"
-                  color="white"
-                  _hover={{ bg: "blue.700" }}
-                  rounded="full"
-                  onClick={() => addToCart(product)}
-                />
-              </Flex>
-            ))}
-          </Stack>
-
-          {/* Pagination */}
-          <HStack mt={4} pt={3} borderTop="1px solid" borderColor={borderCol} justify="space-between">
-            <Text fontSize="sm" color="gray.600">
-              Showing {totalProducts === 0 ? 0 : startIndex + 1}-{endIndex} of {totalProducts}
-            </Text>
-            <HStack>
-              <Button size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} isDisabled={page <= 1}>
-                Previous
-              </Button>
-              <Text fontSize="sm">Page {page} / {totalPages}</Text>
-              <Button size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} isDisabled={page >= totalPages}>
-                Next
-              </Button>
-            </HStack>
-          </HStack>
+          <SearchProduct onAddToCart={addToCart} />
         </Box>
       </Box>
 
@@ -223,35 +174,21 @@ const Order: React.FC = () => {
                   <Text fontWeight="medium">{item.product.name}</Text>
                 </Box>
                 <HStack>
-                  <IconButton
-                    aria-label="Decrease"
-                    size="sm"
-                    variant="ghost"
-                    color="gray.700"
-                    _hover={{ color: "black" }}
-                    icon={<BiMinus size={18} />}
-                    onClick={() => updateCartQuantity(item.product.id, -1)}
-                  />
+                  <IconButton aria-label="Decrease" size="sm" variant="ghost"
+                    onClick={() => updateCartQuantity(item.product.id, -1)}>
+                    <BiMinus size={18} />
+                  </IconButton>
                   <Text fontWeight="semibold" fontSize="lg" w="6" textAlign="center">
                     {item.quantity}
                   </Text>
-                  <IconButton
-                    aria-label="Increase"
-                    size="sm"
-                    variant="ghost"
-                    color="blue.600"
-                    _hover={{ color: "blue.700" }}
-                    icon={<BiPlus size={18} />}
-                    onClick={() => updateCartQuantity(item.product.id, 1)}
-                  />
-                  <IconButton
-                    aria-label="Remove"
-                    size="sm"
-                    colorScheme="red"
-                    variant="ghost"
-                    icon={<BiX size={18} />}
-                    onClick={() => removeFromCart(item.product.id)}
-                  />
+                  <IconButton aria-label="Increase" size="sm" variant="ghost"
+                    onClick={() => updateCartQuantity(item.product.id, 1)}>
+                    <BiPlus size={18} />
+                  </IconButton>
+                  <IconButton aria-label="Remove" size="sm" variant="ghost"
+                    onClick={() => removeFromCart(item.product.id)}>
+                    <BiX color="red" size={18} />
+                  </IconButton>
                 </HStack>
               </Flex>
 
@@ -283,23 +220,24 @@ const Order: React.FC = () => {
                 <Spacer />
                 <Text>{currency(subtotal)}</Text>
               </HStack>
-               <HStack>
-                <Text>Discount::</Text>
+
+              <HStack>
+                <Text>Discount:</Text>
                 <Spacer />
                 <Input
-                    type="number"
-                    size="sm"
-                    w="28"
-                    textAlign="right"
-                    value={discountValue === "" ? "" : discountValue}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      if (v === "") return setDiscountValue("");
-                      const n = Number(v);
-                      setDiscountValue(Number.isNaN(n) ? "" : n);
-                    }}
-                    placeholder="0"
-                  />
+                  type="number"
+                  size="sm"
+                  w="28"
+                  textAlign="right"
+                  value={discountValue === "" ? "" : discountValue}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === "") return setDiscountValue("");
+                    const n = Number(v);
+                    setDiscountValue(Number.isNaN(n) ? "" : n);
+                  }}
+                  placeholder="0"
+                />
               </HStack>
 
               <HStack mt={2}>
@@ -325,8 +263,18 @@ const Order: React.FC = () => {
                 <Text>Change to Return:</Text>
                 <Spacer />
                 <Text fontWeight="medium">
-                  {amountReceived !== "" ? currency(Math.max(0, changeToReturn)) : "-"}
+                  {amountReceived !== "" ? currency(changeToReturn) : "-"}
                 </Text>
+              </HStack>
+              <HStack align="start" mt={2}>
+                <Text>Description:</Text>
+                <Spacer />
+                <Input
+                  placeholder="Enter description"
+                  size="sm"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
               </HStack>
 
               <Box mt={2} borderTop="1px solid" borderColor={borderCol} />
@@ -338,14 +286,26 @@ const Order: React.FC = () => {
               </HStack>
             </VStack>
 
-            <Button
-              mt={4}
-              colorScheme="green"
-              w="full"
-              onClick={() => alert("Paid")}
-            >
-              Paid
-            </Button>
+            <VStack mt={4}>
+              <Button
+                bgColor="gray"
+                w="full"
+                onClick={() => handleSubmit("Pending")}
+                loadingText="Saving..."
+                loading={submitting}
+              >
+                Save
+              </Button>
+              <Button
+                bgColor="gray"
+                w="full"
+                onClick={() => handleSubmit("Completed")}
+                loading={submitting}
+                loadingText="Dispatching..."
+              >
+                Dispatch
+              </Button>
+            </VStack>
           </>
         )}
       </Box>

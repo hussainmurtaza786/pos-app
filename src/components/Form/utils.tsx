@@ -1,7 +1,7 @@
 'use client';
 import { HTMLProps, ReactNode, memo, useState, useEffect, useCallback, ChangeEvent, useRef, useMemo } from "react";
 import { FieldArray, useField, } from "formik";
-import { InputProps, Input, GridItem, Box, Grid, Heading, Icon, Stack, Text, createListCollection, SelectRootProps, RadioGroupRootProps, GridItemProps, Textarea, Fieldset, FileUploadRootProps, Select, Portal, NativeSelect, Field } from "@chakra-ui/react";
+import { InputProps, Input, GridItem, Box, Grid, Heading, Icon, Stack, Text, createListCollection, SelectRootProps, RadioGroupRootProps, GridItemProps, Textarea, Fieldset, FileUploadRootProps, Select, Portal, NativeSelect, Field, VStack } from "@chakra-ui/react";
 import { SelectContent, SelectItem, SelectLabel, SelectRoot, SelectTrigger, SelectValueText, } from "@/components/ui/select"
 import { FaPlusCircle, FaMinusCircle } from "react-icons/fa";
 import { FormGenerator } from "./formGenerator";
@@ -245,7 +245,7 @@ export const FormArrayField = memo(({ type, name, label, labelForAddNewItem, sco
                     arrayHelper.insert(field.value?.length || 1, scope.generateValues(fieldArrayGroup))
                 }
                 return <GridItem pos='relative' p={2.5} pt={1.5} border='1px' borderColor='app.grey2' _focusWithin={{ borderColor: 'app.grey1' }} rounded='lg'
-                    colSpan={12}
+                    colSpan={fieldArea}
                 >
                     <Heading w='full' as='h3' fontSize='md' textUnderlineOffset='3px' borderColor='app.grey2' my={2} >{label}</Heading>
                     {labelForAddNewItem ?
@@ -255,23 +255,19 @@ export const FormArrayField = memo(({ type, name, label, labelForAddNewItem, sco
                         <Icon cursor='pointer' color='app.maroon1' as={FaPlusCircle} onClick={handleAddNew} boxSize={5} pos='absolute' right='8px' bottom='-10px' />
                     }
 
-                    <Grid w='full' templateColumns='repeat(12, 1fr)' gap={3} columnGap={2.5} >
+                    <VStack gap={3} >
                         {field.value?.map((_, idx) => {
-                            return <Grid pos='relative' key={idx} p={2.5} pt={1.5} border='1px' borderColor='app.grey2' _focusWithin={{ borderColor: 'app.grey1' }} rounded='lg'
-                                as={GridItem} columnSpan={'12'}
-                            >
+                            return <Box w='full' pos='relative' key={idx} p={2.5} pt={1.5} border='1px' borderColor='app.grey2' _focusWithin={{ borderColor: 'app.grey1' }} rounded='lg'>
                                 <Heading as='h3' fontSize='md' textUnderlineOffset='3px' borderColor='app.grey2' mb={1} >
                                     {itemLabel && (typeof itemLabel === 'function' ? itemLabel?.({ index: idx }) : `${itemLabel} ${idx + 1}`)}
                                 </Heading>
                                 <Icon cursor='pointer' as={FaMinusCircle} onClick={() => arrayHelper.remove(idx)} color='app.maroon1' boxSize={5} pos='absolute' right='8px' top='-8px' />
                                 <Grid w='full' templateColumns='repeat(12, 1fr)' gap={3} columnGap={2.5} >
-                                    {/* {this.generateFormFields(f.fieldArrayGroup, `${pName}.${f.name}.0`)} */}
-                                    {/* {children({ fieldArrayGroup: fieldArrayGroup!, name: `${name}.0` })} */}
                                     {handleGenerateChildFields(idx)}
                                 </Grid>
-                            </Grid>
+                            </Box>
                         })}
-                    </Grid>
+                    </VStack>
                 </GridItem>
             }}
         />

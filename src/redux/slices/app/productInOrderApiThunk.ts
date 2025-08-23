@@ -1,17 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { authorizedApiClient } from "@/utils";
-import {
-    ProductInOrdersGetInput,
-    ProductInOrdersGetOutput,
-    ProductInOrderPutInput,
-    ProductInOrderPutOutput,
-} from "@/app/api/productInOrder/route";
-import {
-    ProductInOrderGetOutput,
-    ProductInOrderPostInput,
-    ProductInOrderPostOutput,
-    ProductInOrderDeleteOutput,
-} from "@/app/api/productInOrder/[id]/route";
+import { ProductInOrdersGetInput, ProductInOrdersGetOutput, ProductInOrderPutInput, ProductInOrderPutOutput, } from "@/app/api/productInOrder/route";
+import { ProductInOrderGetOutput, ProductInOrderPostInput, ProductInOrderPostOutput, ProductInOrderDeleteOutput, } from "@/app/api/productInOrder/[id]/route";
 
 // -------------------------
 // GET all ProductInOrders

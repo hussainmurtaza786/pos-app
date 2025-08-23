@@ -39,7 +39,6 @@ export async function PUT(req: NextRequest) {
     const inventory: Inventory = await prisma.inventory.create({
       data: {
         id: `inv-${generateUniqueNumber()}`,
-        name,
         availableQuantity: quantity,
         purchasedQuantity: quantity,
         purchasePrice,
@@ -71,7 +70,7 @@ const GetInventoriesSchema = yup.object({
   pageNumber: yup.number(),
   pageSize: yup.number(),
   search: yup.string(),
-  searchField: yup.string().oneOf<keyof Inventory>(["id", "name", "product"]),
+  searchField: yup.string().oneOf<keyof Inventory>(["id", "product"]),
 });
 export type InventoriesGetInput = yup.InferType<typeof GetInventoriesSchema>;
 
@@ -105,12 +104,12 @@ export async function GET(req: NextRequest) {
         where,
         select: {
           id: true,
-          name: true,
           availableQuantity: true,
           purchasedQuantity: true,
           purchasePrice: true,
           description: true,
           productId: true,
+          product: { select: { id: true, name: true } },
         },
       }),
       prisma.inventory.count({ where }),

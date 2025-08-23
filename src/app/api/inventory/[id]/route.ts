@@ -9,15 +9,6 @@ import * as yup from 'yup';
 export interface InventoryGetOutput {
   data: Inventory;
 }
-
-// const UpdateInventorySchema = yup.object({
-//   id: yup.string().required(),
-//   name: yup.string().required(),
-//   description: yup.string().nullable(),
-//   purchasedQuantity: yup.number().required(),
-//   availableQuantity: yup.number().required(),
-//   purchasePrice: yup.number().required(),
-// });
 const UpdateInventorySchema = yup.object({
   id: yup.string().required(),
   name: yup.string().required(),

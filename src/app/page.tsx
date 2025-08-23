@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import Inventory from '@/tabs/inventoryTab';
 import Product from '@/tabs/productTab';
 import ProductInOrder from '@/tabs/productInOrder';
+import Order from '@/tabs/orderTab';
 
 function App() {
   const [loading, setLoading] = useState(true);

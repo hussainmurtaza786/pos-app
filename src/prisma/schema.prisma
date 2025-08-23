@@ -57,7 +57,7 @@ model Product {
 
 model Inventory {
   id                String  @id @default(cuid())
-  name              String
+  // name              String
   description       String?
   purchasedQuantity Int
   availableQuantity Int
@@ -74,16 +74,14 @@ model Inventory {
 }
 
 model Order {
-  id             Int       @id @default(autoincrement())
+  id             Int     @id @default(autoincrement())
   description    String?
-  subtotal       Float
   discount       Float
-  total          Float
   amountReceived Float
-  changeGiven    Float
-  
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime? @updatedAt
+  status         Status?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 
   createdBy   User   @relation(fields: [createdById], references: [id])
   createdById String
@@ -94,14 +92,14 @@ model Order {
 }
 
 model ProductInOrder {
-  orderId       Int
-  productId     String
-  inventoryId   String?
-  returnOrderId Int?
-  quantity      Int
-  sellPrice     Float
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime? @updatedAt
+  orderId     Int
+  productId   String
+  inventoryId String?
+  // returnOrderId Int?
+  quantity    Int
+  sellPrice   Float
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime? @updatedAt
 
   order     Order      @relation(fields: [orderId], references: [id])
   product   Product    @relation(fields: [productId], references: [id])
@@ -126,10 +124,9 @@ model ReturnOrder {
 }
 
 model ReturnOrderProduct {
-  orderId       Int
+  returnOrderId Int
   productId     String
-  inventoryId   String?
-  returnOrderId Int?
+  // inventoryId   String?
   quantity      Int
   sellPrice     Float
   createdAt     DateTime  @default(now())
@@ -138,7 +135,7 @@ model ReturnOrderProduct {
   product     Product      @relation(fields: [productId], references: [id])
   ReturnOrder ReturnOrder? @relation(fields: [returnOrderId], references: [orderId])
 
-  @@id([orderId, productId])
+  @@id([returnOrderId, productId])
 }
 
 model Expense {
@@ -167,4 +164,9 @@ model Category {
 enum UserRole {
   Admin
   Staff
+}
+
+enum Status {
+  Pending
+  Completed
 }

@@ -1,5 +1,6 @@
 import prisma from '@/prisma/client';
-import { ProductInOrder } from '@prisma/client';
+import { ProductInOrder } from '@/prisma/customTypes';
+
 
 import { NextRequest, NextResponse } from 'next/server';
 import * as yup from 'yup';
@@ -88,7 +89,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       where: { orderId_productId: { orderId, productId } },
       data: {
         inventoryId,
-        returnOrderId,
         quantity,
         sellPrice,
       },

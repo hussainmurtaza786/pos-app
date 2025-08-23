@@ -3,12 +3,8 @@ import Table from '@/components/Table';
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { useCallback, useEffect } from "react";
 import { IoMdRefresh } from "react-icons/io";
-import {
-    AddUpdateProductInOrderForm,
-    DeleteProductInOrderHandlerButton,
-    ViewProductInOrder
-} from "./components";
 import { getProductInOrders } from "@/redux/slices/app/productInOrderApiThunk";
+import { ViewProductInOrder } from "./components";
 
 export default function ProductInOrder() {
     const { count, input, items: productInOrders } = useAppSelector(s => s.app.productInOrder);
@@ -38,7 +34,7 @@ export default function ProductInOrder() {
                     <Heading fontFamily="poppins" fontSize="3xl" fontWeight="bold">Products In Orders</Heading>
                     <Text>Manage products assigned to orders</Text>
                 </Box>
-                <AddUpdateProductInOrderForm type="Add" />
+                {/* <AddUpdateProductInOrderForm type="Add" /> */}
             </Flex>
 
             <Box border='1px solid var(--chakra-colors-gray-400)' borderRadius='md'>
@@ -74,12 +70,19 @@ export default function ProductInOrder() {
                         //   align: "left", 
                         //   format: val => <ViewProductInOrder productInOrderId={val} /> 
                         // },
-                        { accessKey: "orderId", label: "Order ID", align: "left" },
-                        { accessKey: "productId", label: "Product ID", align: "left" },
+                        { accessKey: "orderId", label: "Order ID", align: "left", format: val => <ViewProductInOrder orderId={val} productId={val} /> },
+
+                        // { accessKey: "orderId", label: "Order ID", align: "left" },
+                        // { accessKey: "productId", label: "Product ID", align: "left" },
                         { accessKey: "quantity", label: "Quantity", align: "left" },
                         { accessKey: "sellPrice", label: "Sell Price", align: "left" },
-                        { accessKey: "returnOrderId", label: "return Order Id", align: "left" },
-                        { accessKey: "inventoryId", label: "Inventory Id  ", align: "left" },
+                        // { accessKey: "productId", label: "Sell Price", align: "left" },
+                        { accessKey: "product", label: "Product Name", align: "left", format: (_, row) => row.product?.name || "—", },
+                        { accessKey: "order", label: "Status", align: "left", format: (_, row) => row.order?.status || "—", },
+                        { accessKey: "order", label: "Discount", align: "left", format: (_, row) => row.order?.discount || "—", },
+                        // { accessKey: "order", label: "Amount Received", align: "left", format: (_, row) => row.order?.amountReceived || "—", },
+
+                        // { accessKey: "inventoryId", label: "Inventory Id  ", align: "left" },
                         // { accessKey: "price", label: "Price", align: "left" },
                         // {
                         //     accessKey: "compositeId", 

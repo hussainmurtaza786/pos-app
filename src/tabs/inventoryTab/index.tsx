@@ -64,7 +64,7 @@ export default function Inventory() {
                     columns={[
                         // { accessKey: "id", label: "Id", align: "left" },
                         { accessKey: "id", label: "Id", align: "left", format: val => <ViewInventory InventoryId={val} /> },
-                        { accessKey: "name", label: "Product", align: "left" },
+                        { accessKey: "product", label: "Product", align: "left", format:prod=>prod?.name },
                         { accessKey: "purchasedQuantity", label: "Purchased Qty", align: "left" },
                         { accessKey: "availableQuantity", label: "Available Qty", align: "left" },
                         { accessKey: "purchasePrice", label: "Purchase Price", align: "left" },

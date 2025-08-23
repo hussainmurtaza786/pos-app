@@ -210,11 +210,12 @@ export function ViewProductInOrder({ orderId, productId }: { orderId: number, pr
               <Dialog.Body p='3'>
                 <Box>
                   <Text><strong>Order ID:</strong> {_pio.orderId}</Text>
-                  <Text><strong>Product ID:</strong> {_pio.productId}</Text>
                   <Text><strong>Quantity:</strong> {_pio.quantity}</Text>
                   <Text><strong>Sell Price:</strong> {_pio.sellPrice}</Text>
-                  <Text><strong>Inventory ID:</strong> {_pio.inventoryId}</Text>
-                  <Text><strong>Return Order ID:</strong> {_pio.returnOrderId}</Text>
+                  <Text><strong>Return Order ID:</strong> {_pio.product?.name}</Text>
+                  <Text><strong>Return Order ID:</strong> {_pio.product?.price}</Text>
+                  <Text><strong>Return Order ID:</strong> {_pio.order.status}</Text>
+                  <Text><strong>Return Order ID:</strong> {_pio.order.discount}</Text>
                 </Box>
               </Dialog.Body>
               :

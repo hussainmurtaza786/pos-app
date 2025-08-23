@@ -1,9 +1,8 @@
 import prisma from "@/prisma/client";
 import { NextRequest } from "next/server";
 import * as yup from "yup";
-import { generateUniqueNumber, parseQueryParams } from "../utils";
-import { verifyAuthorization } from "@/utils";
-import { ProductInOrder } from "@prisma/client";
+import { parseQueryParams } from "../utils";
+import { ProductInOrder } from "@/prisma/customTypes";
 
 // =====================
 // Validation Schemas
@@ -12,41 +11,38 @@ const AddProductInOrderSchema = yup.object({
   orderId: yup.number().required(),
   productId: yup.string().required(),
   inventoryId: yup.string().nullable(),
-  returnOrderId: yup.number().nullable(),
   quantity: yup.number().required(),
   sellPrice: yup.number().required(),
 });
 
 export type ProductInOrderPutInput = yup.InferType<typeof AddProductInOrderSchema>;
-
 export interface ProductInOrderPutOutput {
   data: ProductInOrder;
 }
 
 // =====================
-// PUT
+// PUT → Add product to an order
 // =====================
 export async function PUT(req: NextRequest) {
   try {
-    const { orderId, productId, inventoryId, quantity, sellPrice, returnOrderId } =
+    const { orderId, productId, inventoryId, quantity, sellPrice } =
       AddProductInOrderSchema.validateSync(await req.json(), {
         stripUnknown: true,
         abortEarly: false,
       });
 
-    // const user = await verifyAuthorization(req);
-    // if (!user.id) {
-    //   return Response.json({ error: "Unauthorized" }, { status: 401 });
-    // }
-
-    const productInOrder: ProductInOrder = await prisma.productInOrder.create({
+    const productInOrder = await prisma.productInOrder.create({
       data: {
         orderId,
         productId,
         inventoryId,
-        returnOrderId,
         quantity,
         sellPrice,
+      },
+      include: {
+        order: true,
+        product: true,
+        inventory: true,
       },
     });
 
@@ -67,7 +63,7 @@ export async function PUT(req: NextRequest) {
 }
 
 // =====================
-// GET 
+// GET → Get order history with product + order details
 // =====================
 const GetProductInOrdersSchema = yup.object({
   pageNumber: yup.number(),
@@ -84,7 +80,7 @@ export type ProductInOrdersGetInput = yup.InferType<typeof GetProductInOrdersSch
 export interface ProductInOrdersGetOutput {
   data: {
     count: number;
-    items: ProductInOrder[];
+    items: any[];
   };
 }
 
@@ -109,21 +105,35 @@ export async function GET(req: NextRequest) {
         take: pageSize,
         orderBy: { createdAt: "desc" },
         where,
-        select: {
-          orderId: true,
-          productId: true,
-          inventoryId: true,
-          returnOrderId: true,
-          quantity: true,
-          sellPrice: true,
-          createdAt: true,
+        include: {
+          order: {
+            select: {
+              discount: true,
+              amountReceived: true,
+              status: true,
+            },
+          },
+          product: {
+            select: {
+              sku: true,
+              name: true,
+              price: true,
+            },
+          },
+          inventory: true,
         },
       }),
       prisma.productInOrder.count({ where }),
     ]);
 
+    // add computed subtotal for each row
+    const itemsWithSubtotal = productOrders.map((item) => ({
+      ...item,
+      subtotal: item.quantity * item.sellPrice,
+    }));
+
     return Response.json(
-      { data: { count, items: productOrders } } as ProductInOrdersGetOutput,
+      { data: { count, items: itemsWithSubtotal } } as ProductInOrdersGetOutput,
       { status: 200 }
     );
   } catch (error: any) {
