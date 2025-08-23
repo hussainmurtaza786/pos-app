@@ -14,6 +14,7 @@ datasource db {
   // url      = env("DATABASE_URL")
   url      = env("POSTGRES_PRISMA_POOL_URL")
 }
+
 model User {
   id        String    @id @default(cuid())
   email     String?   @unique
@@ -26,7 +27,7 @@ model User {
   inventories Inventory[]
   orders      Order[]
   // returnOrders ReturnOrder[]
-  expenses     Expense[]
+  expenses    Expense[]
   products    Product[]
   ReturnOrder ReturnOrder[]
 }
@@ -44,8 +45,8 @@ model Product {
   createdBy   User   @relation(fields: [createdById], references: [id])
   createdById String
 
-  categoryId  String
-  category    Category  @relation(fields: [categoryId], references: [id])
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
 
   Inventory            Inventory[]
   ProductInOrder       ProductInOrder[]
@@ -53,9 +54,10 @@ model Product {
 
   @@index([name])
 }
+
 model Inventory {
   id                String  @id @default(cuid())
-  name        String
+  name              String
   description       String?
   purchasedQuantity Int
   availableQuantity Int
@@ -72,11 +74,16 @@ model Inventory {
 }
 
 model Order {
-  id          Int     @id @default(autoincrement())
-  description String?
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime? @updatedAt
+  id             Int       @id @default(autoincrement())
+  description    String?
+  subtotal       Float
+  discount       Float
+  total          Float
+  amountReceived Float
+  changeGiven    Float
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime? @updatedAt
 
   createdBy   User   @relation(fields: [createdById], references: [id])
   createdById String
@@ -135,26 +142,27 @@ model ReturnOrderProduct {
 }
 
 model Expense {
-  id          String     @id @default(uuid())
+  id          String    @id @default(uuid())
   title       String
   amount      Float
   description String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime?  @updatedAt
-
-  user        User       @relation(fields: [userId], references: [id])
-  userId      String
-}
-
-model Category {
-  id          String    @id @default(uuid())
-  name        String    @unique
-
   createdAt   DateTime  @default(now())
   updatedAt   DateTime? @updatedAt
 
-  products    Product[]
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
 }
+
+model Category {
+  id   String @id @default(uuid())
+  name String @unique
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  products Product[]
+}
+
 ////////////////////// Enums //////////////////////
 enum UserRole {
   Admin

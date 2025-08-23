@@ -13,6 +13,7 @@ import { AUTH_TOKEN_NAME, PAGES } from '@/app-config';
 import { useRouter } from 'next/navigation';
 import Inventory from '@/tabs/inventoryTab';
 import Product from '@/tabs/productTab';
+import ProductInOrder from '@/tabs/productInOrder';
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -34,7 +35,7 @@ function App() {
     switch (activeTab) {
       case 'dashboard': return <Dashboard />;
       case 'sales': return <Sales />;
-      case 'orders': return <Orders />;
+      case 'orders': return <ProductInOrder />;
       case 'products': return <Product />;
       case 'returns': return <Returns />;
       case 'inventory': return <Inventory />;

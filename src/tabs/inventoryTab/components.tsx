@@ -231,6 +231,7 @@ export function ViewInventory({ InventoryId }: { InventoryId: string }) {
                                     <Text><strong>Purchase Price:</strong> {_inventory.purchasePrice}</Text>
                                     <Text><strong>Purchased Qty:</strong> {_inventory.purchasedQuantity}</Text>
                                     <Text><strong>Available Qty:</strong> {_inventory.availableQuantity}</Text>
+                                    <Text><strong>Description:</strong> {_inventory.product?.description}</Text>
                                     {/* <Text><strong>Vendor:</strong> {_inventory.?.name}</Text> */}
 
                                 </Box>

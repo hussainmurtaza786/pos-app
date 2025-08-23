@@ -15,11 +15,13 @@ import {
 } from './productApiThunks';
 
 import { Inventory, Product } from '@/prisma/customTypes';
-import { Category } from '@prisma/client';
+import { Category, ProductInOrder } from '@prisma/client';
 import { addCategory, getCategories } from './categoryApiThunks ';
 import { ProductsGetInput } from '@/app/api/product/route';
 import { InventoriesGetInput } from '@/app/api/inventory/route';
 import { handlePending, handleReject } from '@/redux/helper';
+import { ProductInOrdersGetInput } from '@/app/api/productInOrder/route';
+import { addProductInOrder, deleteProductInOrderById, getProductInOrderById, getProductInOrders, updateProductInOrderById } from './productInOrderApiThunk';
 
 interface AdminAppState {
   inventory: {
@@ -34,6 +36,12 @@ interface AdminAppState {
     input: ProductsGetInput,
     itemFullDataById: { [id: string]: Product | undefined }
   },
+  productInOrder: {
+    items: ProductInOrder[] | null;
+    count: number;
+    input: ProductInOrdersGetInput;
+    itemFullDataById: { [compositeId: string]: ProductInOrder | undefined };
+  };
   category: {
     items: Category[];
     count: number;
@@ -43,6 +51,7 @@ interface AdminAppState {
   fetchingStatus: {
     getInventories: boolean
     getProducts: boolean
+    getProductInOrders: boolean
 
   },
   error: {},
@@ -61,6 +70,12 @@ const initialState: AdminAppState = {
     input: { pageNumber: 1, pageSize: 10 },
     itemFullDataById: {}
   },
+  productInOrder: {
+    items: null,
+    count: 0,
+    input: { pageNumber: 1, pageSize: 10 },
+    itemFullDataById: {},
+  },
   category: {
     items: [],
     count: 0,
@@ -69,7 +84,8 @@ const initialState: AdminAppState = {
   },
   fetchingStatus: {
     getInventories: false,
-    getProducts: false
+    getProducts: false,
+    getProductInOrders: false,
 
   },
   error: {},
@@ -161,6 +177,53 @@ const adminAppSlice = createSlice({
         state.category.items.push(action.payload);
         state.category.count += 1;
       });
+
+    // PRODUCT IN ORDER
+    builder.addCase(getProductInOrders.fulfilled, (state, { payload, meta: { arg } }) => {
+      state.fetchingStatus.getProductInOrders = false;
+      state.productInOrder.items = payload.data.items;
+      state.productInOrder.count = payload.data.count;
+      state.productInOrder.input = { ...state.productInOrder.input, ...arg };
+    });
+    builder.addCase(getProductInOrders.pending, handlePending('getProductInOrders'));
+    builder.addCase(getProductInOrders.rejected, handleReject('getProductInOrders'));
+    builder.addCase(addProductInOrder.fulfilled, (state, { payload }) => {
+      state.productInOrder.items?.unshift(payload.data);
+      if (state.productInOrder.items?.length === state.productInOrder.input.pageSize) {
+        state.productInOrder.items?.pop();
+      }
+      const compositeId = `${payload.data.orderId}-${payload.data.productId}`;
+      state.productInOrder.itemFullDataById[compositeId] = payload.data;
+      state.productInOrder.count++;
+    });
+    builder.addCase(deleteProductInOrderById.fulfilled, (state, { payload, meta: { arg } }) => {
+      // Build compositeId from thunk argument
+      const argCompositeId = `${arg.orderId}-${arg.productId}`;
+
+      state.productInOrder.items =
+        state.productInOrder.items?.filter(
+          (item) => `${item.orderId}-${item.productId}` !== argCompositeId
+        ) || null;
+
+      const compositeId = `${payload.data.orderId}-${payload.data.productId}`;
+      delete state.productInOrder.itemFullDataById[compositeId];
+    });
+    builder.addCase(getProductInOrderById.fulfilled, (state, { payload }) => {
+      const compositeId = `${payload.data.orderId}-${payload.data.productId}`;
+      state.productInOrder.itemFullDataById[compositeId] = payload.data;
+    });
+    builder.addCase(updateProductInOrderById.fulfilled, (state, { payload, meta: { arg } }) => {
+      const compositeId = `${payload.data.orderId}-${payload.data.productId}`;
+      state.productInOrder.itemFullDataById[compositeId] = payload.data;
+      const index = state.productInOrder.items?.findIndex(
+        (item) => `${item.orderId}-${item.productId}` === `${arg.id.orderId}-${arg.id.productId}`
+
+        // (item) => `${item.orderId}-${item.productId}` === arg.id
+      );
+      if (typeof index === 'number' && index > -1) {
+        state.productInOrder.items![index] = payload.data;
+      }
+    });
   },
 });
 
