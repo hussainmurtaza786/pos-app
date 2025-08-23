@@ -81,7 +81,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         sku: input.sku,
         description: input.description ?? '',
         price: input.price,
-        categoryId: input.categoryId
+         categoryId: input.categoryId
 
       },
     });
