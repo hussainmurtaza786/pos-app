@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import * as yup from "yup";
 import { parseQueryParams } from "../utils";
 import { ProductInOrder } from "@/prisma/customTypes";
+import { verifyAuthorization } from "@/utils";
 
 // =====================
 // Validation Schemas
@@ -92,7 +93,15 @@ export async function GET(req: NextRequest) {
         abortEarly: false,
       });
 
-    const where: { [k: string]: any } = {};
+    const user = await verifyAuthorization(req);
+    if (!user.id) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // const where: { [k: string]: any } = {};
+    const where: { [k: string]: any } = {
+      createdById: user.id, // 🔑 filter by logged-in user
+    };
     if (search && searchField === "orderId") {
       where[searchField] = Number(search);
     } else if (search) {

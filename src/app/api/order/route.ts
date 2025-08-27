@@ -109,7 +109,17 @@ export async function GET(req: NextRequest) {
                 abortEarly: false,
             });
 
-        const where: { [k: string]: any } = {};
+        const user = await verifyAuthorization(req);
+        if (!user.id) {
+            return Response.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // base condition: only this user's orders
+        const where: { [k: string]: any } = {
+            createdById: user.id, // 🔑 filter by logged-in user
+        };
+
+        // const where: { [k: string]: any } = {};
         if (search && searchField === "id") {
             where[searchField] = { equals: Number(search.trim()) };
         } else if (search) {

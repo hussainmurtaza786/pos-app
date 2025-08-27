@@ -93,7 +93,8 @@ const Order: React.FC = () => {
       toaster.create({ type: "warning", title: "Enter amount received", closable: true });
       return;
     }
-    if (Number(amountReceived) <= subtotal) {
+
+    if (Number(amountReceived) < subtotal) {
       toaster.create({ type: "error", title: "AmountReceived should be greater ", closable: true });
       return;
     }

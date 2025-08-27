@@ -3,6 +3,7 @@ import prisma from "@/prisma/client";
 import { NextRequest } from "next/server";
 import * as yup from "yup";
 import type { Expense as PrismaExpense } from "@prisma/client";
+import { verifyAuthorization } from "@/utils";
 
 /** Local helper to read query params as an object */
 function parseQueryParams(req: NextRequest) {
@@ -13,7 +14,7 @@ function parseQueryParams(req: NextRequest) {
    Testing helpers
 ========================= */
 // If your schema requires a userId, set an existing user UUID here or via env
-const TEST_USER_ID = process.env.TEST_USER_ID ?? "00000000-0000-0000-0000-000000000000";
+// const TEST_USER_ID = process.env.TEST_USER_ID ?? "00000000-0000-0000-0000-000000000000";
 
 /* =========================
    Validation Schemas
@@ -41,15 +42,15 @@ const ListSchema = yup.object({
   search: yup.string().default(""),
   searchField: yup
     .string()
-    .oneOf<keyof PrismaExpense>(["id", "title", "description"])
-    .default("title"),
+    .oneOf<keyof PrismaExpense>(["id", "reason", "description"])
+    .default("reason"),
 });
 type ListInput = yup.InferType<typeof ListSchema>;
 interface ListOutput {
   data: {
     count: number;
     items: Array<
-      Pick<PrismaExpense, "id" | "title" | "amount" | "description" | "createdAt">
+      Pick<PrismaExpense, 'id'>
     >;
   };
 }
@@ -70,12 +71,22 @@ export async function PUT(req: NextRequest) {
       stripUnknown: true,
       abortEarly: false,
     });
+    // const user = await verifyAuthorization(req);
+    // if (!user.id) {
+    //   window.location.reload()
+    //   return Response.json(
+    //     { error: "Unauthorized" },
+    //     { status: 401 }
+    //   );
+    // }
 
+    // console.log('user ==>', user.id)
+    const user = '50934ed1-cbe2-4603-b1ed-7255f93bfd80'
     // If userId is not required in your schema, remove it from data
     const expense = await prisma.expense.create({
-      data: { title, amount, description, userId: TEST_USER_ID } as any,
+      data: { title, amount, description, userId: user } as any,
       select: {
-        id: true, title: true, amount: true, description: true,
+        id: true, amount: true, description: true,
         createdAt: true, updatedAt: true, userId: true,
       },
     });
@@ -110,7 +121,7 @@ export async function GET(req: NextRequest) {
         take: pageSize,
         orderBy: { createdAt: "desc" },
         where,
-        select: { id: true, title: true, amount: true, description: true, createdAt: true },
+        select: { id: true, amount: true, description: true, createdAt: true },
       }),
       prisma.expense.count({ where }),
     ]);
@@ -144,7 +155,7 @@ export async function PATCH(req: NextRequest) {
     const updated = await prisma.expense.update({
       where: { id },
       data: rest,
-      select: { id: true, title: true, amount: true, description: true, createdAt: true, updatedAt: true },
+      select: { id: true, amount: true, description: true, createdAt: true, updatedAt: true },
     });
 
     return Response.json({ data: updated } as UpdateOutput, { status: 200 });

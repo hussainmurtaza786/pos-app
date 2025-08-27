@@ -6,11 +6,8 @@ import { FiPlus } from "react-icons/fi";
 import { Box, Dialog, Flex, Button, FormatByte, IconButton, Input, Portal, Spinner, Text, SkeletonText } from "@chakra-ui/react";
 import { CloseButton } from "@/components/ui/close-button";
 import { MdDelete } from "react-icons/md";
-import { chakraComponents, AsyncSelect, CreatableSelect } from "chakra-react-select";
 import { Category, } from "@prisma/client";
 import { authorizedApiClient } from "@/utils";
-// import { CategoriesGetInput, CategoriesGetOutput } from "@/app/api/category/route";
-// import { CategoryGetOutput } from "@/app/api/category/[id]/route";
 import { IoCloseSharp } from "react-icons/io5";
 import { useField } from "formik";
 import { FaImage } from "react-icons/fa";
@@ -117,65 +114,9 @@ export function AddUpdateProductForm({ initialValues, type = 'Add' }: AddUpdateF
                                 fields={[
                                     { type: "text", name: "name", label: "Name", fieldArea: 12, notRequired: true },
                                     { type: "text", name: "sku", label: "Sku", fieldArea: 12, notRequired: true },
-                                    // {
-                                    //     type: "custom", name: "vendor", label: "Vendor", fieldArea: 12,
-                                    //     CustomField({ name, label, value, scope }) {
-                                    //         const [field, meta, helper] = useField<Vendor | null>(name);
-                                    //         const handleSelect = (vendor: Vendor) => {
-
-                                    //             scope.formikProps.setFieldValue(name, vendor, true);
-                                    //         }
-                                    //         const handleDeSelect = () => {
-                                    //             scope.formikProps.setFieldValue(name, null, true);
-                                    //         }
-                                    //         return (
-                                    //             <>
-                                    //                 <Text >{label}</Text>
-                                    //                 {/* <SearchVendor onSelect={handleSelect} value={field.value} onRemove={handleDeSelect} /> */}
-                                    //                 {meta.touched && <Text color='fg.error'>{meta.error}</Text>}
-                                    //             </>
-                                    //         )
-                                    //     },
-                                    // },
                                     { type: "select", name: "categoryId", label: "Category", fieldArea: 12, options: categories.map(c => ({ label: c.name, value: c.id })) },
-
                                     { type: "text", name: "description", label: "description", fieldArea: 12, notRequired: true },
                                     { type: "text", name: "price", label: "Price", fieldArea: 12, notRequired: true },
-                                    // { type: "text", name: "productId", label: "Product ", fieldArea: 12, notRequired: true },
-                                    // {
-                                    //     type: "custom", name: "product", label: "Product", fieldArea: 12,
-                                    //     CustomField({ name, label, value, scope }) {
-                                    //         const [field, meta, helper] = useField<Product | null>(name);
-                                    //         const prod = field.value;
-                                    //         // const [prod, setProd] = useState<Product | null>(null);
-                                    //         const handleSelect = (product: Product) => {
-                                    //             // setProd(product);
-                                    //             scope.formikProps.setFieldValue(name, product, true);
-                                    //         }
-                                    //         const handleDeSelect = () => {
-                                    //             scope.formikProps.setFieldValue(name, null, true);
-                                    //         }
-                                    //         return (
-                                    //             <>
-                                    //                 <Text >{label}</Text>
-                                    //                 {prod ?
-                                    //                     <Box pos="relative" >
-                                    //                         {/* <Box onClick={handleDeSelect} aria-label="Product-image"
-                                    //                             boxSize='100px'  bgSize='cover' bgPos='center' borderRadius='md' mb='2'
-                                    //                         /> */}
-                                    //                         {/* <Box ml='auto' mr='5' boxSize='100px' boxShadow='lg' bgImg={`url(${prod.media[0]?.url})`} bgRepeat='no-repeat' bgPos='center' bgSize='cover' >
-                                    //                             <IconButton onClick={handleDeSelect} float='right' transform='auto' translateX='3' translateY='-3' size='xs' p='0' variant='surface' colorPalette='gray'><IoCloseSharp /></IconButton>
-                                    //                         </Box> */}
-                                    //                         <Text>{prod.name}</Text>
-                                    //                     </Box> :
-                                    //                     // <SearchProduct onSelect={handleSelect} />
-                                    //                     <Text></Text>
-                                    //                 }
-                                    //                 {meta.touched && <Text color='fg.error'>{meta.error}</Text>}
-                                    //             </>
-                                    //         )
-                                    //     },
-                                    // },
                                     { type: "submit", name: "submit-btn", label: `${type} Inventory`, fieldArea: 12, inputProps: { size: 'sm' } },
 
                                 ]}
