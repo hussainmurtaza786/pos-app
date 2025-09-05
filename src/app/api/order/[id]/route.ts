@@ -34,7 +34,12 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
     const item = await prisma.order.findUnique({
       where: { id: Number(params.id) },
       include: {
-        ProductInOrder: true,
+        ProductInOrder: {
+          include: {
+            product: true,
+            inventory: true,
+          }
+        },
         ReturnOrder: true,
         createdBy: {
           select: {
@@ -84,8 +89,19 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         description: data.description,
         discount: data.discount,
         amountReceived: data.amountReceived,
-        status: data.status as Status
-
+        status: data.status as Status,
+      },
+      include: {
+        ProductInOrder: {
+          include: {
+            product: true,
+            inventory: true,
+          },
+        },
+        ReturnOrder: true,
+        createdBy: {
+          select: { id: true, email: true, phone: true },
+        },
       },
     });
 

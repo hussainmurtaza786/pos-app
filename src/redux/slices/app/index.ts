@@ -2,8 +2,8 @@ import { createSlice } from '@reduxjs/toolkit';
 import { addInventory, deleteInventoryById, getInventories, getInventoryById, updateInventoryById, } from './inventoryApiThunks';
 import { addProduct, deleteProductById, getProductById, getProducts, updateProductById, } from './productApiThunks';
 
-import { Inventory, Product, ProductInOrder } from '@/prisma/customTypes';
-import { Category, Order } from '@prisma/client';
+import { Inventory, Order, Product, ProductInOrder } from '@/prisma/customTypes';
+import { Category } from '@prisma/client';
 import { addCategory, getCategories } from './categoryApiThunks ';
 import { ProductsGetInput } from '@/app/api/product/route';
 import { InventoriesGetInput } from '@/app/api/inventory/route';
@@ -187,8 +187,8 @@ const adminAppSlice = createSlice({
     // ============================
     builder.addCase(getOrders.fulfilled, (state, { payload, meta: { arg } }) => {
       state.fetchingStatus.getOrders = false;
-      state.order.items = payload.data.items;
-      state.order.count = payload.data.count;
+      state.order.items = payload.items;
+      state.order.count = payload.count;
       state.order.input = { ...state.order.input, ...arg };
     });
     builder.addCase(getOrders.pending, handlePending('getOrders'));

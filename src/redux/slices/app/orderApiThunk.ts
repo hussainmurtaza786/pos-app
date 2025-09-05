@@ -10,16 +10,24 @@ export const getOrders = createAsyncThunk(
     "adminApp/getOrders",
     async (params: OrdersGetInput, thunkAPI) => {
         try {
+            console.log("Fetching orders with params:", params);
+
             const response = await authorizedApiClient.get<OrdersGetOutput>(
                 `/api/order/`,
                 { params }
             );
-            return response.data;
+
+            console.log("Response data:", response.data);
+
+            // unwrap
+            return response.data.data;
         } catch (error: any) {
+            console.error("Failed to fetch orders:", error);
             return thunkAPI.rejectWithValue(error.response?.data ?? error.message);
         }
     }
 );
+
 
 // -------------------------
 // CREATE new order

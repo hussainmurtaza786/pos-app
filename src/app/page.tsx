@@ -15,6 +15,7 @@ import Inventory from '@/tabs/inventoryTab';
 import Product from '@/tabs/productTab';
 import ProductInOrder from '@/tabs/productInOrder';
 import Order from '@/tabs/orderTab';
+import OrdersTable from '@/tabs/Orders';
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -36,7 +37,7 @@ function App() {
     switch (activeTab) {
       case 'dashboard': return <Dashboard />;
       case 'sales': return <Sales />;
-      case 'orders': return <ProductInOrder />;
+      case 'orders': return <Order />;
       case 'products': return <Product />;
       case 'returns': return <Returns />;
       case 'inventory': return <Inventory />;

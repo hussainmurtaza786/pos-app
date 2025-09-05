@@ -3,7 +3,8 @@ import { NextRequest } from "next/server";
 import * as yup from "yup";
 import { parseQueryParams } from "../utils";
 import { verifyAuthorization } from "@/utils";
-import { Order, Status } from "@prisma/client";
+import { Status } from "@prisma/client";
+import { Order } from "@/prisma/customTypes";
 
 // =====================
 // Validation Schemas
@@ -72,7 +73,14 @@ export async function PUT(req: NextRequest) {
                     }
                 },
 
-            },// include: { ProductInOrder: true }
+            }, include: {
+                ProductInOrder: {
+                    include: {
+                        product: true,
+                        inventory: true,
+                    }
+                }
+            }
         });
 
         return Response.json({ data: order } as OrderPutOutput, { status: 201 });
@@ -125,24 +133,60 @@ export async function GET(req: NextRequest) {
         } else if (search) {
             where[searchField] = { contains: search.trim(), mode: "insensitive" };
         }
-
         const [orders, count] = await prisma.$transaction([
             prisma.order.findMany({
                 skip: (pageNumber - 1) * pageSize,
                 take: pageSize,
                 orderBy: { createdAt: "desc" },
                 where,
-                select: {
-                    id: true,
-                    description: true,
-                    discount: true,
-                    amountReceived: true,
-                    status: true,
-                    createdAt: true,
+                include: {
+                    ProductInOrder: {
+                        include: {
+                            inventory: true,
+                            product: true,
+                        },
+                    },
                 },
             }),
             prisma.order.count({ where }),
         ]);
+
+        // const [orders, count] = await prisma.$transaction([
+        //     prisma.order.findMany({
+        //         skip: (pageNumber - 1) * pageSize,
+        //         take: pageSize,
+        //         orderBy: { createdAt: "desc" },
+        //         where,
+        //         select: {
+        //             id: true,
+        //             description: true,
+        //             discount: true,
+        //             amountReceived: true,
+        //             status: true,
+        //             createdAt: true,
+
+        //             ProductInOrder: {
+        //                 select: {
+        //                     quantity: true,
+        //                     sellPrice: true,
+        //                     inventory: {
+        //                         select: {
+        //                             purchasedQuantity: true,
+        //                         }
+        //                     },
+        //                     product: {
+        //                         select: {
+        //                             name: true,
+        //                             price: true,
+        //                             sku: true,
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         },
+        //     }),
+        //     prisma.order.count({ where }),
+        // ]);
 
         return Response.json(
             { data: { count, items: orders } } as OrdersGetOutput,

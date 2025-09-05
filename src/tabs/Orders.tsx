@@ -1,185 +1,138 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { BiChevronDown } from 'react-icons/bi';
+import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Spinner,
+  Text,
+  Button,
+  Flex,
+  Table,
+} from "@chakra-ui/react";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/redux/store";
+import { getOrders } from "@/redux/slices/app/orderApiThunk";
 
-const dummySale = {
-  id: '569397c8-946c-4ae7-a1f3-...',
-  date: 'July 26, 2025',
-  total: 3320,
-  payment: 'CARD',
-  status: 'PARTIALLY RETURNED',
-  products: [
-    { name: 'Sample Product 1', quantity: 2 },
-    { name: 'Sample Product 2', quantity: 1 },
-  ],
-  cashReceived: 4000,
-  changeReturned: 680,
-};
+const OrdersTable: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
 
-export default function SalesPage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showReturnModal, setShowReturnModal] = useState(false);
-  const [returnQty, setReturnQty] = useState(dummySale.products.map(() => 0));
-  const [returnReason, setReturnReason] = useState('');
+  // Pagination states
+  const [pageNumber, setPageNumber] = useState(1);
+  const pageSize = 10;
 
-  const handleReturnQtyChange = (index: number, value: number) => {
-    const updated = [...returnQty];
-    updated[index] = value;
-    setReturnQty(updated);
-  };
+  const { items, count } = useSelector((state: RootState) => state.app.order);
+  const loading = useSelector(
+    (state: RootState) => state.app.fetchingStatus.getOrders
+  );
 
-  const returnTotal = dummySale.products.reduce((sum, item, i) => {
-    return sum + returnQty[i] * 1000; // assume Rs 1000 per item
-  }, 0);
+  console.log('Orders state:', { items, count, loading });
 
-  const filtered = dummySale.id.includes(searchTerm);
+  // Fetch on mount & page change
+  useEffect(() => {
+    dispatch(getOrders({ pageNumber, pageSize }));
+  }, [dispatch, pageNumber]);
+
+  const totalPages = Math.ceil(count / pageSize);
 
   return (
-    <div className="p-6">
-      {/* Search Bar */}
-      <input
-        type="text"
-        placeholder="Search sales by ID, customer name, or phone..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full border rounded p-2 mb-4"
-      />
+    <Box p={6}>
+      <Text fontSize="2xl" mb={4} fontWeight="bold">
+        Orders
+      </Text>
 
-      {/* Sales Receipts */}
-      <h2 className="text-2xl font-bold mb-2">Sales Receipts</h2>
-      {filtered && (
-        <div className="bg-white shadow rounded p-4">
-          <div className="grid grid-cols-6 gap-4 font-semibold text-gray-600 border-b pb-2">
-            <span>SALE ID</span>
-            <span>DATE</span>
-            <span>TOTAL</span>
-            <span>PAYMENT</span>
-            <span>STATUS</span>
-            <span>ACTIONS</span>
-          </div>
-
-          <div className="grid grid-cols-6 gap-4 items-center py-3 border-b text-sm">
-            <span className="text-blue-600">{dummySale.id}</span>
-            <span>{dummySale.date}</span>
-            <span className="font-semibold">Rs {dummySale.total}</span>
-            <span>{dummySale.payment}</span>
-            <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-medium">
-              {dummySale.status}
-            </span>
-            <div className="flex gap-3 items-center">
-              <button
-                className="text-blue-600 hover:underline"
-                onClick={() => setShowReturnModal(true)}
-              >
-                Return
-              </button>
-              <button
-                onClick={() => setShowDetailsModal(true)}
-                className="text-gray-600 hover:text-black flex items-center"
-              >
-                Details <BiChevronDown className="ml-1" />
-              </button>
-            </div>
-          </div>
-        </div>
+      {loading && (
+        <Flex justify="center" align="center" py={10}>
+          <Spinner size="xl" />
+        </Flex>
       )}
 
-      {/* Return Modal */}
-      {showReturnModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-md w-[500px]">
-            <h3 className="text-xl font-semibold mb-4">Return Products</h3>
-            <table className="w-full mb-4">
-              <thead>
-                <tr className="text-left font-medium text-gray-700">
-                  <th className="pb-2">Product</th>
-                  <th className="pb-2">Quantity Sold</th>
-                  <th className="pb-2">Return Qty</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dummySale.products.map((item, i) => (
-                  <tr key={i} className="text-sm">
-                    <td className="py-2">{item.name}</td>
-                    <td>{item.quantity}</td>
-                    <td>
-                      <input
-                        type="number"
-                        min="0"
-                        max={item.quantity}
-                        value={returnQty[i]}
-                        onChange={(e) => handleReturnQtyChange(i, parseInt(e.target.value || '0'))}
-                        className="border px-2 py-1 rounded w-20"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <textarea
-              placeholder="Reason for return..."
-              className="w-full border rounded p-2 mb-3"
-              value={returnReason}
-              onChange={(e) => setReturnReason(e.target.value)}
-            />
-
-            <p className="mb-4 text-sm">
-              Return Amount:{' '}
-              <span className="font-semibold">Rs {returnTotal.toLocaleString()}</span>
-            </p>
-
-            <div className="flex justify-end gap-3">
-              <button
-                className="bg-gray-400 text-white px-4 py-2 rounded"
-                onClick={() => setShowReturnModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="bg-green-600 text-white px-4 py-2 rounded"
-                onClick={() => {
-                  // Save return logic here...
-                  setShowReturnModal(false);
-                }}
-              >
-                Submit Return
-              </button>
-            </div>
-          </div>
-        </div>
+      {!loading && items?.length === 0 && (
+        <Text textAlign="center" py={6}>
+          No orders found
+        </Text>
       )}
 
-      {/* Details Modal */}
-      {showDetailsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-md w-[500px]">
-            <h3 className="text-xl font-semibold mb-4">Sale Details</h3>
-            <p className="text-sm mb-2">Sale ID: {dummySale.id}</p>
-            <p className="text-sm mb-2">Date: {dummySale.date}</p>
-            <ul className="list-disc pl-5 text-sm mb-3">
-              {dummySale.products.map((item, i) => (
-                <li key={i}>
-                  {item.name} — Qty: {item.quantity}
-                </li>
+      {!loading && items && items.length > 0 && (
+        <>
+          <Table.Root variant="outline" size="md">
+            <Table.Header>
+              <Table.Row>
+                <Table.ColumnHeader>ID</Table.ColumnHeader>
+                <Table.ColumnHeader>Discount</Table.ColumnHeader>
+                <Table.ColumnHeader>Amount Received</Table.ColumnHeader>
+                <Table.ColumnHeader>Description</Table.ColumnHeader>
+                <Table.ColumnHeader>Status</Table.ColumnHeader>
+                <Table.ColumnHeader>Products</Table.ColumnHeader> {/* ✅ new column */}
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {items.map((order) => (
+                <Table.Row key={order.id}>
+                  <Table.Cell>{order.id}</Table.Cell>
+                  <Table.Cell>{order.discount}</Table.Cell>
+                  <Table.Cell>{order.amountReceived}</Table.Cell>
+                  <Table.Cell>{order.description}</Table.Cell>
+                  <Table.Cell>{order.status}</Table.Cell>
+                  <Table.Cell>
+                    {order.ProductInOrder?.map((pro) => (
+                      <Box
+                        key={`${pro.orderId}-${pro.productId}`} // ✅ unique key
+                        borderBottom="1px solid"
+                        borderColor="gray.200"
+                        pb={2}
+                        mb={2}
+                        _last={{ borderBottom: "none", pb: 0, mb: 0 }}
+                      >
+                        <Text fontWeight="bold">{pro.product?.name}</Text>
+                        <Text fontSize="sm">Qty: {pro.quantity}</Text>
+                        <Text fontSize="sm">Price: {pro.sellPrice}</Text>
+                      </Box>
+                    ))}
+                  </Table.Cell>
+                </Table.Row>
               ))}
-            </ul>
-            <p className="text-sm mb-1">Cash Received: Rs {dummySale.cashReceived}</p>
-            <p className="text-sm mb-1">Change Returned: Rs {dummySale.changeReturned}</p>
-            <p className="text-sm mb-3 font-semibold">Total Paid: Rs {dummySale.total}</p>
-            <div className="text-right">
-              <button
-                className="bg-blue-600 text-white px-4 py-2 rounded"
-                onClick={() => setShowDetailsModal(false)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+            </Table.Body>
+            <Table.Footer>
+              <Table.Row>
+                <Table.Cell colSpan={6}>
+                  <Flex justify="center" mt={4} gap={2}>
+                    <Button
+                      size="sm"
+                      onClick={() => setPageNumber((p) => Math.max(p - 1, 1))}
+                      disabled={pageNumber === 1}
+                    >
+                      Previous
+                    </Button>
+
+                    {[...Array(totalPages)].map((_, i) => (
+                      <Button
+                        key={i}
+                        size="sm"
+                        onClick={() => setPageNumber(i + 1)}
+                        colorScheme={pageNumber === i + 1 ? "blue" : "gray"}
+                      >
+                        {i + 1}
+                      </Button>
+                    ))}
+
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        setPageNumber((p) => Math.min(p + 1, totalPages))
+                      }
+                      disabled={pageNumber === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </Flex>
+                </Table.Cell>
+              </Table.Row>
+            </Table.Footer>
+          </Table.Root>
+        </>
       )}
-    </div>
+    </Box>
   );
-}
+};
+
+export default OrdersTable;

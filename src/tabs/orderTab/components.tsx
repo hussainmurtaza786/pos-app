@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toaster } from "@/components/ui/toaster"
 import { FiPlus } from "react-icons/fi";
-import { Box, Dialog, Button, Portal, Spinner, Text, SkeletonText, IconButton } from "@chakra-ui/react";
+import { Box, Dialog, Button, Portal, Spinner, Text, SkeletonText, IconButton, Flex } from "@chakra-ui/react";
 import { CloseButton } from "@/components/ui/close-button";
 import Form from "@/components/Form";
 import { MdDelete } from "react-icons/md";
@@ -81,14 +81,14 @@ export function AddUpdateOrderForm({ initialValues, type = 'Add' }: AddUpdateFor
                                     // { type: "text", name: "total", label: "Total", fieldArea: 12, notRequired: true },
                                     { type: "text", name: "amountReceived", label: "Amount Received", fieldArea: 12, notRequired: true },
                                     // { type: "text", name: "changeGiven", label: "Change Given", fieldArea: 12, notRequired: true },
-                                    {
-                                        type: 'array-field', name: 'products', label: 'Products', itemLabel: 'Item',fieldArea:12,
-                                        fieldArrayGroup: [
-                                            // { type: "custom", name: "product", label: "Product", fieldArea: 6, CustomField: ({}) => <></> },
-                                            { type: "text", name: "quantity", label: "Quantity", fieldArea: 6 },
-                                            { type: "text", name: "sellPrice", label: "Sell Price", fieldArea: 6 },
-                                        ]
-                                    },
+                                    // {
+                                    //     type: 'array-field', name: 'products', label: 'Products', itemLabel: 'Item', fieldArea: 12,
+                                    //     fieldArrayGroup: [
+                                    //         // { type: "custom", name: "product", label: "Product", fieldArea: 6, CustomField: ({}) => <></> },
+                                    //         { type: "text", name: "quantity", label: "Quantity", fieldArea: 6 },
+                                    //         { type: "text", name: "sellPrice", label: "Sell Price", fieldArea: 6 },
+                                    //     ]
+                                    // },
                                     { type: "submit", name: "submit-btn", label: `${type} Order`, fieldArea: 12, inputProps: { size: 'sm' } },
                                 ]}
                             />
@@ -136,42 +136,84 @@ export function ViewOrder({ orderId }: { orderId: number }) {
 
     useEffect(() => {
         if (modalOpenState && !_order) {
-            dispatch(getOrderById(orderId))
+            dispatch(getOrderById(orderId));
         }
-    }, [modalOpenState])
+    }, [modalOpenState]);
 
     return (
-        <Dialog.Root onOpenChange={({ open }) => setModalOpenState(open)} scrollBehavior="inside" placement='center' size="sm">
+        <Dialog.Root
+            onOpenChange={({ open }) => setModalOpenState(open)}
+            scrollBehavior="inside"
+            placement="center"
+            size="sm"
+        >
             <Dialog.Trigger asChild>
-                <Button variant="plain" color='blue' >{orderId}</Button>
+                <Button variant="subtle" colorScheme="blue" size="sm">
+                    View #{orderId}
+                </Button>
             </Dialog.Trigger>
-            <Portal >
+            <Portal>
                 <Dialog.Backdrop />
-                <Dialog.Positioner >
-                    <Dialog.Content >
-                        <Dialog.Header p='5' >
-                            <Dialog.Title>Order Details</Dialog.Title>
+                <Dialog.Positioner>
+                    <Dialog.Content borderRadius="lg" boxShadow="lg" bg="white">
+                        <Dialog.Header p="5" borderBottom="1px solid" borderColor="gray.200">
+                            <Dialog.Title fontWeight="bold" fontSize="xl" color="blue.600">
+                                Order Details
+                            </Dialog.Title>
                         </Dialog.Header>
                         <Dialog.CloseTrigger asChild>
-                            <CloseButton size="sm" />
+                            <CloseButton size="sm" position="absolute" top="4" right="4" />
                         </Dialog.CloseTrigger>
-                        {_order ?
-                            <Dialog.Body p='3'>
-                                <Box>
-                                    <Text><strong>Description:</strong> {_order.description}</Text>
-                                    <Text><strong>Discount:</strong> {_order.discount}</Text>
-                                    {/* <Text><strong>Total:</strong> {_order.total}</Text> */}
-                                    <Text><strong>Amount Received:</strong> {_order.amountReceived}</Text>
-                                    {/* <Text><strong>Change Given:</strong> {_order.changeGiven}</Text> */}
+
+                        {_order ? (
+                            <Dialog.Body p="5">
+                                <Box fontSize="sm" color="gray.700">
+                                    <Text mb="2">
+                                        <strong>Description:</strong> {_order.description || "—"}
+                                    </Text>
+                                    <Text mb="2">
+                                        <strong>Discount:</strong> {_order.discount}
+                                    </Text>
+                                    <Text mb="2">
+                                        <strong>Amount Received:</strong> {_order.amountReceived}
+                                    </Text>
+
+                                    <Box mt="4">
+                                        <Text fontWeight="semibold" fontSize="md" mb="2" color="blue.500">
+                                            Products
+                                        </Text>
+                                        {_order.ProductInOrder?.map((pro: any) => (
+                                            <Flex
+                                                key={`${pro.orderId}-${pro.productId}`}
+                                                justify="space-between"
+                                                align="center"
+                                                p="3"
+                                                mb="2"
+                                                border="1px solid"
+                                                borderColor="gray.200"
+                                                borderRadius="md"
+                                                _hover={{ bg: "gray.50" }}
+                                            >
+                                                <Box>
+                                                    <Text fontWeight="medium">{pro.product?.name}</Text>
+                                                    <Text fontSize="xs" color="gray.500">
+                                                        Qty: {pro.quantity}
+                                                    </Text>
+                                                </Box>
+                                                <Text fontWeight="semibold">{pro.sellPrice}</Text>
+                                            </Flex>
+                                        ))}
+                                    </Box>
                                 </Box>
-                            </Dialog.Body> :
-                            <Dialog.Body p='3'>
-                                <SkeletonText noOfLines={5} gap="4" />
                             </Dialog.Body>
-                        }
+                        ) : (
+                            <Dialog.Body p="5">
+                                <SkeletonText noOfLines={6} />
+                            </Dialog.Body>
+                        )}
                     </Dialog.Content>
                 </Dialog.Positioner>
             </Portal>
         </Dialog.Root>
-    )
+    );
 }

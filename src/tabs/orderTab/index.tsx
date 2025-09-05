@@ -44,14 +44,35 @@ export default function Order() {
                         { accessKey: "discount", label: "Discount", align: "left" },
                         { accessKey: "amountReceived", label: "Amount Received", align: "left" },
                         { accessKey: "status", label: "Status", align: "left" },
-                        { accessKey: "description", label: "Description", align: "left" },
+                        // {
+                        //     accessKey: "ProductInOrder", label: "Product", align: "left", format: (val, rowValues) =>
+                        //         val?.map((pro: any) => (
+                        //             <Box
+                        //                 key={`${pro.orderId}-${pro.productId}`} // ✅ unique key
+                        //                 borderBottom="1px solid"
+                        //                 borderColor="gray.200"
+                        //                 mb={2}
+                        //                 _last={{ borderBottom: "none", pb: 0, mb: 0 }}
+                        //             >
+                        //                 <Text fontWeight="bold">{pro.product?.name}</Text>
+                        //                 <Text fontSize="sm">Qty: {pro.quantity}</Text>
+                        //                 <Text fontSize="sm">Price: {pro.sellPrice}</Text>
+                        //             </Box>
+                        //         )),
+                        // },
+                        {
+                            accessKey: "ProductInOrder", label: "Total", align: "left", format: (val, rowValues) =>
+                                <Flex gap={4} align='center'>
+                                    {val.reduce((acc: number, curr: any) => acc + (curr.sellPrice * curr.quantity), 0) - rowValues.discount}
+                                </Flex>
+                        },
 
 
                         {
                             accessKey: "id", label: "Action", align: "left", format: (val, rowValues) =>
                                 <Flex gap={4} align='center'>
                                     <AddUpdateOrderForm initialValues={rowValues} type="Update" />
-                                    <DeleteOrderHandlerButton orderId={val} />
+                                    {/* <DeleteOrderHandlerButton orderId={val} /> */}
                                 </Flex>
                         },
                     ]}
