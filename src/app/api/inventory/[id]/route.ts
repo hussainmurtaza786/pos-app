@@ -11,7 +11,6 @@ export interface InventoryGetOutput {
 }
 const UpdateInventorySchema = yup.object({
   id: yup.string().required(),
-  name: yup.string().required(),
   productId: yup.string().required(),
   quantity: yup.number().required(),
   purchasePrice: yup.number().required(),

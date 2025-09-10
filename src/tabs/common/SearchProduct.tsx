@@ -1,14 +1,10 @@
 'use client';
-import { Box, Flex, Text } from '@chakra-ui/react';
+import { Box, Flex, Text, FormatNumber } from '@chakra-ui/react';
 import React from 'react';
-import {
-  chakraComponents,
-  AsyncSelect,
-} from "chakra-react-select";
+import { chakraComponents, AsyncSelect } from "chakra-react-select";
 import { authorizedApiClient } from '@/utils';
 import { ProductsGetInput, ProductsGetOutput } from '@/app/api/product/route';
 import { Product } from '@prisma/client';
-import { FormatNumber } from '@chakra-ui/react'; // assuming you already use this
 
 interface Props {
   onSelect?: (product: Product) => void;
@@ -17,7 +13,6 @@ interface Props {
 }
 
 export default function SearchProduct({ onSelect, onRemove, onAddToCart }: Props) {
-  // Fetch products from backend
   const search = async (searchValue: string) => {
     const { data: { data: { items } } } =
       await authorizedApiClient.get<ProductsGetOutput>(`/api/product`, {
@@ -27,6 +22,7 @@ export default function SearchProduct({ onSelect, onRemove, onAddToCart }: Props
           search: searchValue.trim(),
           searchField: "name",
         } as ProductsGetInput,
+        withCredentials: true,
       });
     return items;
   };
@@ -38,15 +34,12 @@ export default function SearchProduct({ onSelect, onRemove, onAddToCart }: Props
       chakraStyles={{
         downChevron: (base) => ({ display: "none" }),
         option: (base) => ({ ...base, color: 'black', p: 2, borderBottom: '1px solid' }),
-        container: (base) => ({
-          ...base,
-          "& > *": { border: '1px solid black' }
-        }),
+        container: (base) => ({ ...base, "& > *": { border: '1px solid black' } }),
       }}
       placeholder="Search Product"
       onChange={(newValue, { action }) => {
-        const prod = newValue as Product;
-        if (action === "select-option") {
+        const prod = newValue as unknown as Product | null;
+        if (action === "select-option" && prod) {
           onSelect?.(prod);
           onAddToCart?.(prod); // cart integration
         }
@@ -64,9 +57,10 @@ export default function SearchProduct({ onSelect, onRemove, onAddToCart }: Props
             }));
             callback(data);
           })
-          .catch(e =>
-            console.log("error in search", e.response?.data)
-          );
+          .catch(e => {
+            console.log("error in search", e?.response?.data || e?.message);
+            callback([]);
+          });
       }}
       components={{
         Option: ({ children, ...props }) => {
@@ -76,20 +70,10 @@ export default function SearchProduct({ onSelect, onRemove, onAddToCart }: Props
               <chakraComponents.Option {...props}>
                 <Flex align="center" gap="2">
                   <Box>
-                    <Text
-                      maxH="60px"
-                      overflowY="hidden"
-                      w="full"
-                      fontWeight="medium"
-                    >
+                    <Text maxH="60px" overflowY="hidden" w="full" fontWeight="medium">
                       {data.name}
                     </Text>
-                    <Text
-                      maxH="60px"
-                      overflowY="hidden"
-                      w="full"
-                      color="green.600"
-                    >
+                    <Text maxH="60px" overflowY="hidden" w="full" color="green.600">
                       <FormatNumber value={data.price} />
                     </Text>
                   </Box>

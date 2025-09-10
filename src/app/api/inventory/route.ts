@@ -10,7 +10,6 @@ import { Inventory } from "@/prisma/customTypes";
 // =====================
 const AddInventorySchema = yup.object({
   productId: yup.string().required(),
-  name: yup.string().required(),
   description: yup.string().nullable(),
   quantity: yup.number().required(),
   purchasePrice: yup.number().required(),
@@ -23,19 +22,17 @@ export interface InventoryPutOutput {
 
 export async function PUT(req: NextRequest) {
   try {
-    const { name, productId, description, quantity, purchasePrice } =
+    const { productId, description, quantity, purchasePrice } =
       AddInventorySchema.validateSync(await req.json(), {
         stripUnknown: true,
         abortEarly: false,
       });
+
     const user = await verifyAuthorization(req);
     if (!user.id) {
-      return Response.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.log('user ---->', user.id)
+
     const inventory: Inventory = await prisma.inventory.create({
       data: {
         id: `inv-${generateUniqueNumber()}`,
@@ -64,13 +61,14 @@ export async function PUT(req: NextRequest) {
 }
 
 // =====================
-// GET 
+// GET (now supports ?productId=...)
 // =====================
 const GetInventoriesSchema = yup.object({
   pageNumber: yup.number(),
   pageSize: yup.number(),
   search: yup.string(),
   searchField: yup.string().oneOf<keyof Inventory>(["id", "product"]),
+  productId: yup.string().optional(), // 👈 added
 });
 export type InventoriesGetInput = yup.InferType<typeof GetInventoriesSchema>;
 
@@ -83,22 +81,27 @@ export interface InventoriesGetOutput {
 
 export async function GET(req: NextRequest) {
   try {
-    const { pageNumber = 1, pageSize = 10, search = "", searchField = "id" } =
-      GetInventoriesSchema.validateSync(parseQueryParams(req), {
-        stripUnknown: true,
-        abortEarly: false,
-      });
+    const {
+      pageNumber = 1,
+      pageSize = 10,
+      search = "",
+      searchField = "id",
+      productId,
+    } = GetInventoriesSchema.validateSync(parseQueryParams(req), {
+      stripUnknown: true,
+      abortEarly: false,
+    });
 
     const user = await verifyAuthorization(req);
     if (!user.id) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // const where: { [k: string]: any } = {};
-    const where: { [k: string]: any } = {
-      createdById: user.id, // 🔑 filter by logged-in user
-    };
-    if (search && searchField === "id") {
+    const where: Record<string, any> = { createdById: user.id };
+
+    if (productId) {
+      where.productId = productId;
+    } else if (search && searchField === "id") {
       where[searchField] = { contains: search.trim().toLowerCase() };
     } else if (search) {
       where[searchField] = { contains: search.trim(), mode: "insensitive" };
@@ -117,7 +120,7 @@ export async function GET(req: NextRequest) {
           purchasePrice: true,
           description: true,
           productId: true,
-          product: { select: { id: true, name: true } },
+          product: { select: { id: true, name: true, price: true } }, // expose price for sales
         },
       }),
       prisma.inventory.count({ where }),
@@ -140,7 +143,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-
-
-
-

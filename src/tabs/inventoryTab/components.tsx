@@ -89,10 +89,10 @@ export function AddUpdateInventoryForm({ initialValues, type = 'Add' }: AddUpdat
                                 onSubmit={handleSubmit}
 
                                 // onChange={({ values: { form: values } }: any) => {
-                                //     // console.log("values == >", values)
+                                //     // console.log("values == >", values)    
                                 // }}
                                 fields={[
-                                    { type: "text", name: "name", label: "Name", fieldArea: 12, notRequired: true },
+                                    // { type: "text", name: "name", label: "Name", fieldArea: 12, notRequired: true },
                                     // {
                                     //     type: "custom", name: "vendor", label: "Vendor", fieldArea: 12,
                                     //     CustomField({ name, label, value, scope }) {
@@ -113,8 +113,7 @@ export function AddUpdateInventoryForm({ initialValues, type = 'Add' }: AddUpdat
                                     //         )
                                     //     },
                                     // },
-                                    { type: "text", name: "quantity", label: "Quantity", fieldArea: 12, notRequired: true },
-                                    { type: "text", name: "purchasePrice", label: "Purchase Price", fieldArea: 12, notRequired: true },
+
                                     // { type: "text", name: "productId", label: "Product ", fieldArea: 12, notRequired: true },
                                     {
                                         type: "custom", name: "product", label: "Product", fieldArea: 12,
@@ -149,6 +148,8 @@ export function AddUpdateInventoryForm({ initialValues, type = 'Add' }: AddUpdat
                                             )
                                         },
                                     },
+                                    { type: "text", name: "quantity", label: "Quantity", fieldArea: 12, notRequired: true },
+                                    { type: "text", name: "purchasePrice", label: "Purchase Price", fieldArea: 12, notRequired: true },
                                     { type: "submit", name: "submit-btn", label: `${type} Inventory`, fieldArea: 12, inputProps: { size: 'sm' } },
 
                                 ]}
