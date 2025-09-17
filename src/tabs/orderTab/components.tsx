@@ -2,16 +2,15 @@
 import { useEffect, useRef, useState } from "react";
 import { toaster } from "@/components/ui/toaster"
 import { FiPlus } from "react-icons/fi";
-import { Box, Dialog, Button, Portal, Spinner, Text, SkeletonText, IconButton, Flex } from "@chakra-ui/react";
+import { Box, Dialog, Button, Portal, Spinner, Text, SkeletonText, IconButton, Flex, Badge } from "@chakra-ui/react";
 import { CloseButton } from "@/components/ui/close-button";
 import Form from "@/components/Form";
 import { MdDelete } from "react-icons/md";
 import { LiaEdit } from "react-icons/lia";
 import { Order } from "@prisma/client";
-import { useField } from "formik";
-import { IoCloseSharp } from "react-icons/io5";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { addOrder, deleteOrderById, getOrderById, updateOrderById } from "@/redux/slices/app/orderApiThunk";
+
 
 interface AddUpdateFormProps {
     initialValues?: Order,
@@ -98,6 +97,12 @@ export function AddUpdateOrderForm({ initialValues, type = 'Add' }: AddUpdateFor
             </Portal>
         </Dialog.Root>
     )
+}
+export function StatusBadge({ status }: { status: string }) {
+    if (status === "Pending") {
+        return <Badge colorPalette="yellow" variant="subtle">Pending</Badge>;
+    }
+    return <Badge colorPalette="green" variant="subtle">Completed</Badge>;
 }
 
 export function DeleteOrderHandlerButton({ orderId }: { orderId: number }) {

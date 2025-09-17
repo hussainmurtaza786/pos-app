@@ -58,17 +58,7 @@ export default function Inventory() {
                     <Heading fontFamily="poppins" fontSize="3xl" fontWeight="bold">Inventory</Heading>
                     <Text color="gray.600">Manage your product inventory and stock levels</Text>
                 </Box>
-                <Flex gap={3} align="center">
-                    <IconButton
-                        title='Refresh Data'
-                        variant='subtle'
-                        onClick={() => dispatch(getInventories(input))}
-                        aria-label='data-refetch-btn'
-                    >
-                        <IoMdRefresh />
-                    </IconButton>
-                    <AddUpdateInventoryForm type="Add" />
-                </Flex>
+                <AddUpdateInventoryForm type="Add" />
             </Flex>
 
             {/* Summary Cards */}

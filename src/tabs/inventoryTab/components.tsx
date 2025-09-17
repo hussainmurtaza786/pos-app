@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toaster } from "@/components/ui/toaster";
 import { FiPlus } from "react-icons/fi";
-import { Badge, Box, Dialog, Button, IconButton, Portal, Text, SkeletonText, } from "@chakra-ui/react";
+import { Badge, Box, Dialog, Button, IconButton, Portal, Text, SkeletonText, Flex, } from "@chakra-ui/react";
 import { CloseButton } from "@/components/ui/close-button";
 import Form from "@/components/Form";
 import { MdDelete } from "react-icons/md";
@@ -13,12 +13,7 @@ import { Product } from "@/prisma/customTypes";
 import { useField } from "formik";
 import { IoCloseSharp } from "react-icons/io5";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
-import {
-    addInventory,
-    deleteInventoryById,
-    getInventoryById,
-    updateInventoryById,
-} from "@/redux/slices/app/inventoryApiThunks";
+import { addInventory, deleteInventoryById, getInventoryById, updateInventoryById, } from "@/redux/slices/app/inventoryApiThunks";
 import { keyframes } from "@emotion/react";
 import { CgSpinnerTwoAlt } from "react-icons/cg";
 
@@ -28,7 +23,7 @@ interface AddUpdateFormProps {
 }
 
 /** Change this to tune your low-stock threshold */
-export const LOW_STOCK_THRESHOLD = 5;
+export const LOW_STOCK_THRESHOLD = 10;
 
 /** Consistent stock status badge */
 export function StockStatusBadge({ availableQuantity }: { availableQuantity: number }) {
@@ -141,20 +136,19 @@ export function AddUpdateInventoryForm({ initialValues, type = "Add" }: AddUpdat
                                                 <>
                                                     <Text>{label}</Text>
                                                     {prod ? (
-                                                        <Box pos="relative">
+                                                        <Flex bgColor='#f4f4f5' p={1} align='center' justify='space-between' gap={4} pos="relative">
                                                             <Text>{prod.name}</Text>
                                                             <IconButton
                                                                 onClick={handleDeSelect}
                                                                 aria-label="remove-product"
                                                                 size="xs"
                                                                 p="0"
-                                                                variant="surface"
+                                                                variant="plain"
                                                                 colorPalette="gray"
-                                                                mt={2}
                                                             >
                                                                 <IoCloseSharp />
                                                             </IconButton>
-                                                        </Box>
+                                                        </Flex>
                                                     ) : (
                                                         <SearchProduct onSelect={handleSelect} />
                                                     )}

@@ -2,9 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toaster } from "@/components/ui/toaster"
 import { FiPlus } from "react-icons/fi";
-import {
-  Box, Dialog, Button, IconButton, Portal, Spinner, Text, SkeletonText
-} from "@chakra-ui/react";
+import { Box, Dialog, Button, IconButton, Portal, Spinner, Text, SkeletonText } from "@chakra-ui/react";
 import { CloseButton } from "@/components/ui/close-button";
 import Form from "@/components/Form";
 import { MdDelete } from "react-icons/md";
@@ -214,8 +212,8 @@ export function ViewProductInOrder({ orderId, productId }: { orderId: number, pr
                   <Text><strong>Sell Price:</strong> {_pio.sellPrice}</Text>
                   <Text><strong>Return Order ID:</strong> {_pio.product?.name}</Text>
                   <Text><strong>Return Order ID:</strong> {_pio.product?.price}</Text>
-                  <Text><strong>Return Order ID:</strong> {_pio.order.status}</Text>
-                  <Text><strong>Return Order ID:</strong> {_pio.order.discount}</Text>
+                  {/* <Text><strong>Return Order ID:</strong> {_pio..status}</Text> */}
+                  {/* <Text><strong>Return Order ID:</strong> {_pio.order.discount}</Text> */}
                 </Box>
               </Dialog.Body>
               :

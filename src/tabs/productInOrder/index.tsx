@@ -2,7 +2,6 @@ import { Box, Flex, Heading, Text } from "@chakra-ui/react";
 import Table from '@/components/Table';
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { useCallback, useEffect } from "react";
-import { IoMdRefresh } from "react-icons/io";
 import { getProductInOrders } from "@/redux/slices/app/productInOrderApiThunk";
 import { ViewProductInOrder } from "./components";
 
@@ -78,8 +77,8 @@ export default function ProductInOrder() {
                         { accessKey: "sellPrice", label: "Sell Price", align: "left" },
                         // { accessKey: "productId", label: "Sell Price", align: "left" },
                         { accessKey: "product", label: "Product Name", align: "left", format: (_, row) => row.product?.name || "—", },
-                        { accessKey: "order", label: "Status", align: "left", format: (_, row) => row.order?.status || "—", },
-                        { accessKey: "order", label: "Discount", align: "left", format: (_, row) => row.order?.discount || "—", },
+                        // { accessKey: "order", label: "Status", align: "left", format: (_, row) => row.order?.status || "—", },
+                        // { accessKey: "order", label: "Discount", align: "left", format: (_, row) => row.order?.discount || "—", },
                         // { accessKey: "order", label: "Amount Received", align: "left", format: (_, row) => row.order?.amountReceived || "—", },
 
                         // { accessKey: "inventoryId", label: "Inventory Id  ", align: "left" },

@@ -1,23 +1,18 @@
 'use client'
-import { RootState, useAppDispatch, useAppSelector } from "@/redux/store";
+import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { useEffect, useRef, useState } from "react";
 import { toaster } from "@/components/ui/toaster"
 import { FiPlus } from "react-icons/fi";
-import { Box, Dialog, Flex, Button, FormatByte, IconButton, Input, Portal, Spinner, Text, SkeletonText, HStack } from "@chakra-ui/react";
+import { Box, Dialog, Button, IconButton, Input, Portal, Text, SkeletonText, HStack } from "@chakra-ui/react";
 import { CloseButton } from "@/components/ui/close-button";
 import { MdDelete } from "react-icons/md";
 import { Category, } from "@prisma/client";
 import { authorizedApiClient } from "@/utils";
-import { IoCloseSharp } from "react-icons/io5";
-import { useField } from "formik";
-import { FaImage } from "react-icons/fa";
 import { Product } from "@/prisma/customTypes";
 import { LiaEdit } from "react-icons/lia";
-import { showDialog } from "@/components/Dialog";
 import Form from "@/components/Form";
 import { addProduct, deleteProductById, getProductById, updateProductById } from "@/redux/slices/app/productApiThunks";
 import { CategoriesGetInput, CategoriesGetOutput, CategoryPostInput } from "@/app/api/category/route";
-import { useSelector } from "react-redux";
 import { spinner } from "../inventoryTab/components";
 interface AddUpdateFormProps {
     initialValues?: Product;

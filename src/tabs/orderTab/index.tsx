@@ -2,8 +2,7 @@ import { Box, Flex, Heading, Text } from "@chakra-ui/react";
 import Table from '@/components/Table';
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { useCallback, useEffect } from "react";
-
-import { AddUpdateOrderForm, ViewOrder, DeleteOrderHandlerButton } from "./components";
+import { AddUpdateOrderForm, ViewOrder, StatusBadge } from "./components";
 import { getOrders } from "@/redux/slices/app/orderApiThunk";
 
 export default function Order() {
@@ -43,23 +42,13 @@ export default function Order() {
                         { accessKey: "id", label: "Id", align: "left", format: val => <ViewOrder orderId={val} /> },
                         { accessKey: "discount", label: "Discount", align: "left" },
                         { accessKey: "amountReceived", label: "Amount Received", align: "left" },
-                        { accessKey: "status", label: "Status", align: "left" },
-                        // {
-                        //     accessKey: "ProductInOrder", label: "Product", align: "left", format: (val, rowValues) =>
-                        //         val?.map((pro: any) => (
-                        //             <Box
-                        //                 key={`${pro.orderId}-${pro.productId}`} // ✅ unique key
-                        //                 borderBottom="1px solid"
-                        //                 borderColor="gray.200"
-                        //                 mb={2}
-                        //                 _last={{ borderBottom: "none", pb: 0, mb: 0 }}
-                        //             >
-                        //                 <Text fontWeight="bold">{pro.product?.name}</Text>
-                        //                 <Text fontSize="sm">Qty: {pro.quantity}</Text>
-                        //                 <Text fontSize="sm">Price: {pro.sellPrice}</Text>
-                        //             </Box>
-                        //         )),
-                        // },
+                        // { accessKey: "status", label: "Status", align: "left" },
+                        {
+                            accessKey: "status",
+                            label: "Status",
+                            align: "left",
+                            format: (val, row) => <StatusBadge status={row.status || ""} />
+                        },
                         {
                             accessKey: "ProductInOrder", label: "Total", align: "left", format: (val, rowValues) =>
                                 <Flex gap={4} align='center'>
