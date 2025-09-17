@@ -8,6 +8,7 @@ import Form from '@/components/Form';
 import { PAGES } from '@/app-config';
 import { useRouter } from 'next/navigation';
 import { loginAction } from './action';
+import { toaster } from '@/components/ui/toaster';
 
 interface LoginFormProps {
   onLogin: () => void;
@@ -24,6 +25,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     setError('');
 
     const { error, data } = await loginAction(values);
+    if (!data?.userDetails.email) {
+      toaster.create({
+        type: "error", title: "Invalid Email or Password",
+        description: "Please check your Details and try again",
+        closable: true,
+      })
+    }
 
     if (error) {
       setError(error);
