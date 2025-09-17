@@ -76,18 +76,7 @@ export function AddUpdateOrderForm({ initialValues, type = 'Add' }: AddUpdateFor
                                 onSubmit={handleSubmit}
                                 fields={[
                                     { type: "text", name: "description", label: "Description", fieldArea: 12, notRequired: true },
-                                    { type: "text", name: "discount", label: "Discount", fieldArea: 12, notRequired: true },
-                                    // { type: "text", name: "total", label: "Total", fieldArea: 12, notRequired: true },
-                                    { type: "text", name: "amountReceived", label: "Amount Received", fieldArea: 12, notRequired: true },
-                                    // { type: "text", name: "changeGiven", label: "Change Given", fieldArea: 12, notRequired: true },
-                                    // {
-                                    //     type: 'array-field', name: 'products', label: 'Products', itemLabel: 'Item', fieldArea: 12,
-                                    //     fieldArrayGroup: [
-                                    //         // { type: "custom", name: "product", label: "Product", fieldArea: 6, CustomField: ({}) => <></> },
-                                    //         { type: "text", name: "quantity", label: "Quantity", fieldArea: 6 },
-                                    //         { type: "text", name: "sellPrice", label: "Sell Price", fieldArea: 6 },
-                                    //     ]
-                                    // },
+                                    { type: "select", options: ["Pending", "Completed"], name: "status", label: "Status", fieldArea: 12, notRequired: true },
                                     { type: "submit", name: "submit-btn", label: `${type} Order`, fieldArea: 12, inputProps: { size: 'sm' } },
                                 ]}
                             />

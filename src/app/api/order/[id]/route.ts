@@ -13,9 +13,9 @@ export interface OrderGetOutput {
 const UpdateOrderSchema = yup.object({
   id: yup.number().required(),
   description: yup.string().nullable(),
-  discount: yup.number().required(),
+  // discount: yup.number().required(),
   status: yup.mixed<Status>(),
-  amountReceived: yup.number().required(),
+  // amountReceived: yup.number().required(),
 });
 export type OrderPostInput = yup.InferType<typeof UpdateOrderSchema>;
 
@@ -87,8 +87,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       where: { id: Number(orderId) },
       data: {
         description: data.description,
-        discount: data.discount,
-        amountReceived: data.amountReceived,
+        // discount: data.discount,
+        // amountReceived: data.amountReceived,
         status: data.status as Status,
       },
       include: {

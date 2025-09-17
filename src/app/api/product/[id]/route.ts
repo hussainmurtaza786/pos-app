@@ -81,7 +81,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         sku: input.sku,
         description: input.description ?? '',
         price: input.price,
-         categoryId: input.categoryId
+        categoryId: input.categoryId
 
       },
     });
@@ -109,7 +109,23 @@ export async function DELETE(_: NextRequest, { params }: { params: { id: string 
     const deleted = await prisma.product.delete({ where: { id: params.id } });
 
     return NextResponse.json({ data: deleted } as ProductDeleteOutput, { status: 200 });
+
   } catch (error: any) {
-    return NextResponse.json({ error: 'Server Error', message: error.message }, { status: 500 });
+    // Handle foreign key constraint violation (P2003)
+    if (error.code === 'P2003') {
+      return NextResponse.json(
+        {
+          error: 'Cannot delete product',
+          message: 'This product is linked to inventory or other records and cannot be deleted.',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Generic fallback for unexpected errors
+    return NextResponse.json(
+      { error: 'Server Error', message: error.message ?? 'Something went wrong' },
+      { status: 500 }
+    );
   }
 }
