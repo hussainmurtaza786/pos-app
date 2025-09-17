@@ -15,6 +15,8 @@ import { useField } from "formik";
 import { IoCloseSharp } from "react-icons/io5";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { addInventory, deleteInventoryById, getInventoryById, updateInventoryById } from "@/redux/slices/app/inventoryApiThunks";
+import { keyframes } from "@emotion/react";
+import { CgSpinnerTwoAlt } from "react-icons/cg";
 interface AddUpdateFormProps {
     initialValues?: Inventory,
     type?: "Add" | "Update",
@@ -148,7 +150,7 @@ export function AddUpdateInventoryForm({ initialValues, type = 'Add' }: AddUpdat
                                             )
                                         },
                                     },
-                                    { type: "text", name: "quantity", label: "Quantity", fieldArea: 12, notRequired: true },
+                                    { type: "number", name: "quantity", label: "Quantity", fieldArea: 12, notRequired: true },
                                     { type: "text", name: "purchasePrice", label: "Purchase Price", fieldArea: 12, notRequired: true },
                                     { type: "submit", name: "submit-btn", label: `${type} Inventory`, fieldArea: 12, inputProps: { size: 'sm' } },
 
@@ -163,6 +165,19 @@ export function AddUpdateInventoryForm({ initialValues, type = 'Add' }: AddUpdat
     )
 
 }
+const spin = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+export const spinner = (
+    <Text
+        display="inline-block"
+        fontSize="2xl"
+        animation={`${spin} 1s linear infinite`}
+    >
+        <CgSpinnerTwoAlt />
+    </Text>
+);
 
 export function DeleteInventoryHandlerButton({ inventoryId }: { inventoryId: string }) {
     const dispatch = useAppDispatch();
@@ -190,7 +205,7 @@ export function DeleteInventoryHandlerButton({ inventoryId }: { inventoryId: str
         setLoading(false);
     }
     return (
-        loading ? <Spinner /> :
+        loading ? spinner :
             <IconButton onClick={handleDelete} aria-label='delete-inventory-btn' variant='surface'>
                 <MdDelete size="20" />
             </IconButton>

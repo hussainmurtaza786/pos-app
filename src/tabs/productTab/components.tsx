@@ -18,6 +18,7 @@ import Form from "@/components/Form";
 import { addProduct, deleteProductById, getProductById, updateProductById } from "@/redux/slices/app/productApiThunks";
 import { CategoriesGetInput, CategoriesGetOutput, CategoryPostInput } from "@/app/api/category/route";
 import { useSelector } from "react-redux";
+import { spinner } from "../inventoryTab/components";
 interface AddUpdateFormProps {
     initialValues?: Product;
     type?: "Add" | "Update";
@@ -258,7 +259,7 @@ export function DeleteProductHandlerButton({ productId }: { productId: string })
         setLoading(false);
     }
     return (
-        loading ? <Spinner /> :
+        loading ? spinner :
             <IconButton onClick={handleDelete} aria-label='delete-product-btn' variant='surface'>
                 <MdDelete size="20" />
             </IconButton>
