@@ -2,20 +2,16 @@
 import { Dashboard } from '@/tabs/Dashboard';
 import Expenses from '@/tabs/Expenses';
 import { Layout } from '@/tabs/Layout';
-import Orders from '@/tabs/Orders';
 import { Reports } from '@/tabs/Reports';
 import Returns from '@/tabs/Return';
 import React, { useState, useEffect } from 'react';
 import Sales from '@/tabs/Sales';
-
 import { getCookie } from '@/utils';
 import { AUTH_TOKEN_NAME, PAGES } from '@/app-config';
 import { useRouter } from 'next/navigation';
 import Inventory from '@/tabs/inventoryTab';
 import Product from '@/tabs/productTab';
-import ProductInOrder from '@/tabs/productInOrder';
 import Order from '@/tabs/orderTab';
-import OrdersTable from '@/tabs/Orders';
 
 function App() {
   const [loading, setLoading] = useState(true);

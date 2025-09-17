@@ -71,8 +71,8 @@ export function AddUpdateProductForm({ initialValues, type = "Add" }: AddUpdateF
                 await dispatch(addProduct(payload as any)).unwrap();
                 toaster.create({
                     type: "success",
-                    title: "Inventory Added",
-                    description: "New inventory has been successfully added",
+                    title: "Product Added",
+                    description: "New Product has been successfully added",
                     closable: true,
                 });
             } else {
@@ -191,9 +191,9 @@ export function AddUpdateProductForm({ initialValues, type = "Add" }: AddUpdateF
                                     { type: "text", name: "name", label: "Name", fieldArea: 12, notRequired: true },
                                     { type: "text", name: "sku", label: "Sku", fieldArea: 12, notRequired: true },
                                     // category handled above
-                                    { type: "text", name: "price", label: "Price", fieldArea: 12, notRequired: true },
+                                    { type: "number", name: "price", label: "Price", fieldArea: 12, notRequired: true },
                                     { type: "text", name: "description", label: "description", fieldArea: 12, notRequired: true },
-                                    { type: "submit", name: "submit-btn", label: `${type} Inventory`, fieldArea: 12, inputProps: { size: "sm" } },
+                                    { type: "submit", name: "submit-btn", label: `${type} Product`, fieldArea: 12, inputProps: { size: "sm" } },
                                 ]}
                             />
                         </Dialog.Body>

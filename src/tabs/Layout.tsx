@@ -1,16 +1,6 @@
 "use client";
 import React from "react";
-import {
-    Box,
-    Flex,
-    Button,
-    Text,
-    VStack,
-    HStack,
-    Drawer,
-    CloseButton,
-    Portal,
-} from "@chakra-ui/react";
+import { Box, Flex, Button, Text, VStack, HStack, Drawer, CloseButton, Portal, } from "@chakra-ui/react";
 import { RxHamburgerMenu } from "react-icons/rx";
 import { logout } from "@/redux/slices/auth";
 import { CiLogout } from "react-icons/ci";
@@ -45,8 +35,8 @@ export const Layout: React.FC<LayoutProps> = ({
 
     const navigation = [
         { id: "dashboard", label: "Dashboard", icon: <FaChartBar size={18} /> },
-        { id: "sales", label: "Sales", icon: <FaFileInvoice size={18} /> },
-        { id: "orders", label: "Orders", icon: <FaFileInvoice size={18} /> },
+        { id: "sales", label: "Orders", icon: <FaFileInvoice size={18} /> },
+        { id: "orders", label: "Orders History", icon: <FaFileInvoice size={18} /> },
         { id: "expenses", label: "Expenses", icon: <FaMoneyBillWave size={18} /> },
         { id: "inventory", label: "Inventory", icon: <HiOutlineCube size={18} /> },
         { id: "products", label: "Product", icon: <GoPackage size={18} /> },
@@ -169,7 +159,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     </HStack>
 
                     {/* Right: Hamburger inside Drawer.Trigger */}
-                    <Drawer.Root placement="left">
+                    <Drawer.Root >
                         <Drawer.Trigger asChild>
                             <Button
                                 variant="ghost"
