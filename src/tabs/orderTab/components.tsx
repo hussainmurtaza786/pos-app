@@ -165,12 +165,7 @@ export function ViewOrder({ orderId }: { orderId: number }) {
                                     <Text mb="2">
                                         <strong>Description:</strong> {_order.description || "—"}
                                     </Text>
-                                    <Text mb="2">
-                                        <strong>Discount:</strong> {_order.discount}
-                                    </Text>
-                                    <Text mb="2">
-                                        <strong>Amount Received:</strong> {_order.amountReceived}
-                                    </Text>
+                                    
 
                                     <Box mt="4">
                                         <Text fontWeight="semibold" fontSize="md" mb="2" color="blue.500">
