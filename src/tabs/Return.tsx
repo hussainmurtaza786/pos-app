@@ -1,35 +1,42 @@
 'use client';
 import React, { useMemo, useState } from "react";
 import {
-  Box, Flex, Stack, Heading, Text, Input, Badge, IconButton, Button, HStack, VStack, Spacer,
+  Box, Flex, Stack, Heading, Text, Input, Badge, IconButton,
+  Button, HStack, VStack, Spacer,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { BiMinus, BiPlus, BiX } from "react-icons/bi";
 import { CgShoppingCart } from "react-icons/cg";
-// Use your existing product search
 import SearchProduct from "./common/SearchProduct";
-// If you have Prisma types available:
+
+// hooks + slice actions
+
+
+// If you have Prisma types:
 import type { Product as PrismaProduct } from "@prisma/client";
+import { useAppDispatch } from "@/redux/store";
+import { addReturn } from "@/redux/slices/app/returnApiThunk";
 type Product = PrismaProduct;
 
 interface CartItem {
   product: Product;
   quantity: number;
-  sellPrice: number; // refund per unit
+  sellPrice: number;
 }
 
 const currency = (n: number) => `${n.toFixed(2)}rs`;
 
-const ReturnPage: React.FC = () => {
+const ReturnPage: React.FC<{ orderId: number }> = ({ orderId }) => {
+  const dispatch = useAppDispatch();
+
   const [cart, setCart] = useState<CartItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [reason, setReason] = useState<string>("");
 
-  const cardBg = "white";
   const borderCol = "gray.200";
 
   // ---- Cart ops ----
-  const addToCart = async (product: Product) => {
+  const addToCart = (product: Product) => {
     setCart(prev => {
       const existing = prev.find(i => i.product.id === product.id);
       if (existing) {
@@ -37,7 +44,6 @@ const ReturnPage: React.FC = () => {
           i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
         );
       }
-      // default refund price = current product price (editable)
       return [...prev, { product, quantity: 1, sellPrice: product.price ?? 0 }];
     });
   };
@@ -71,28 +77,45 @@ const ReturnPage: React.FC = () => {
     [cart]
   );
 
-  // ---- Save Return (UI only; no API) ----
+  // ---- Save Return (now calls redux thunk) ----
   const handleSubmit = async () => {
     if (cart.length === 0) {
       toaster.create({ type: "warning", title: "Cart is empty", closable: true });
       return;
     }
 
-    setSubmitting(true);
-    // No backend call here. Wire up to your API later to:
-    // 1) increment inventory.availableQuantity for each product
-    // 2) save a return record with products/qty/price and reason
-    setTimeout(() => {
+    try {
+      setSubmitting(true);
+
+      await dispatch(
+        addReturn({ // or however you’re tracking the order
+          description: reason, // use reason here
+          products: cart.map(i => ({
+            productId: i.product.id,
+            quantity: i.quantity,
+            sellPrice: i.sellPrice,
+          })),
+        })
+      ).unwrap();
+
+
       toaster.create({
         type: "success",
-        title: "Return saved (UI only)",
-        description: "Hook this up to your API to update inventory and history.",
+        title: "Return saved",
         closable: true,
       });
+
       setCart([]);
       setReason("");
+    } catch (err: any) {
+      toaster.create({
+        type: "error",
+        title: "Failed to save return",
+        description: err.message ?? "Unknown error",
+      });
+    } finally {
       setSubmitting(false);
-    }, 800);
+    }
   };
 
   return (
@@ -104,7 +127,7 @@ const ReturnPage: React.FC = () => {
           Select products and quantities to add back into inventory
         </Text>
 
-        <Box bg={cardBg} border="1px solid" borderColor={borderCol} rounded="xl" p={4}>
+        <Box bg="white" border="1px solid" borderColor={borderCol} rounded="xl" p={4}>
           <SearchProduct onAddToCart={addToCart} />
         </Box>
       </Box>
@@ -112,7 +135,7 @@ const ReturnPage: React.FC = () => {
       {/* Right: Cart */}
       <Box
         w={{ base: "full", lg: "420px" }}
-        bg={cardBg}
+        bg="white"
         rounded="xl"
         shadow="sm"
         border="1px solid"
@@ -129,44 +152,26 @@ const ReturnPage: React.FC = () => {
 
         <Stack>
           {cart.map(item => (
-            <Box
-              key={item.product.id}
-              p={3}
-              border="1px solid"
-              borderColor={borderCol}
-              rounded="md"
-              _notFirst={{ mt: 2 }}
-            >
+            <Box key={item.product.id} p={3} border="1px solid" borderColor={borderCol} rounded="md" _notFirst={{ mt: 2 }}>
               <Flex align="center" justify="space-between">
-                <Box>
-                  <Text fontWeight="medium">{item.product.name}</Text>
-                </Box>
+                <Text fontWeight="medium">{item.product.name}</Text>
                 <HStack>
-                  <IconButton
+                  <IconButton size="sm" variant="ghost"
                     aria-label="Decrease"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => updateCartQuantity(item.product.id, -1)}
-                  >
+                    onClick={() => updateCartQuantity(item.product.id, -1)}>
                     <BiMinus size={18} />
                   </IconButton>
                   <Text fontWeight="semibold" fontSize="lg" w="6" textAlign="center">
                     {item.quantity}
                   </Text>
-                  <IconButton
+                  <IconButton size="sm" variant="ghost"
                     aria-label="Increase"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => updateCartQuantity(item.product.id, 1)}
-                  >
+                    onClick={() => updateCartQuantity(item.product.id, 1)}>
                     <BiPlus size={18} />
                   </IconButton>
-                  <IconButton
+                  <IconButton size="sm" variant="ghost"
                     aria-label="Remove"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => removeFromCart(item.product.id)}
-                  >
+                    onClick={() => removeFromCart(item.product.id)}>
                     <BiX color="red" size={18} />
                   </IconButton>
                 </HStack>

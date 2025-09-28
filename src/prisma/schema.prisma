@@ -89,7 +89,7 @@ model Order {
 
   // products    Product[]
   ProductInOrder ProductInOrder[]
-  ReturnOrder    ReturnOrder?
+  // ReturnOrder    ReturnOrder?
 }
 
 model ProductInOrder {
@@ -110,18 +110,19 @@ model ProductInOrder {
 }
 
 model ReturnOrder {
-  orderId     Int     @id
+  // orderId     Int     @id
+  id          Int     @id @default(autoincrement())
   description String?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 
-  createdBy   User   @relation(fields: [createdById], references: [id])
-  createdById String
+  createdBy   User?   @relation(fields: [createdById], references: [id])
+  createdById String?
 
-  order Order @relation(fields: [orderId], references: [id])
+  // order Order @relation(fields: [orderId], references: [id])
 
-  ProductInReturnOrder ReturnOrderProduct[]
+  ReturnOrderProduct ReturnOrderProduct[]
 }
 
 model ReturnOrderProduct {
@@ -134,7 +135,7 @@ model ReturnOrderProduct {
   updatedAt     DateTime? @updatedAt
 
   product     Product      @relation(fields: [productId], references: [id])
-  ReturnOrder ReturnOrder? @relation(fields: [returnOrderId], references: [orderId])
+  ReturnOrder ReturnOrder? @relation(fields: [returnOrderId], references: [id])
 
   @@id([returnOrderId, productId])
 }

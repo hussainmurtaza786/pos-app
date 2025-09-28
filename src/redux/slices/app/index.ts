@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { addInventory, deleteInventoryById, getInventories, getInventoryById, updateInventoryById, } from './inventoryApiThunks';
 import { addProduct, deleteProductById, getProductById, getProducts, updateProductById, } from './productApiThunks';
 
-import { Inventory, Order, Product, ProductInOrder } from '@/prisma/customTypes';
+import { Inventory, Order, Product, ProductInOrder, ReturnOrder } from '@/prisma/customTypes';
 import { Category } from '@prisma/client';
 import { addCategory, getCategories } from './categoryApiThunks ';
 import { ProductsGetInput } from '@/app/api/product/route';
@@ -19,6 +19,8 @@ import {
 
 import { handlePending, handleReject } from '@/redux/helper';
 import { addOrder, deleteOrderById, getOrderById, getOrders, updateOrderById } from './orderApiThunk';
+import { ReturnsGetInput } from '@/app/api/return/route';
+import { addReturn, deleteReturnById, getReturnById, getReturns, updateReturnById } from './returnApiThunk';
 
 // -------------------------
 // State Interface
@@ -48,6 +50,12 @@ interface AdminAppState {
     input: OrdersGetInput;
     itemFullDataById: { [id: string]: Order | undefined };
   };
+  return: {
+    items: ReturnOrder[] | null;
+    count: number;
+    input: ReturnsGetInput;
+    itemFullDataById: { [id: string]: ReturnOrder | undefined };
+  };
   category: {
     items: Category[];
     count: number;
@@ -59,6 +67,7 @@ interface AdminAppState {
     getProducts: boolean;
     getProductInOrders: boolean;
     getOrders: boolean;
+    getReturn: boolean
   };
   error: {};
 }
@@ -91,6 +100,12 @@ const initialState: AdminAppState = {
     input: { pageNumber: 1, pageSize: 10 },
     itemFullDataById: {},
   },
+  return: {
+    items: null,
+    count: 0,
+    input: { pageNumber: 1, pageSize: 10 },
+    itemFullDataById: {},
+  },
   category: {
     items: [],
     count: 0,
@@ -102,6 +117,7 @@ const initialState: AdminAppState = {
     getProducts: false,
     getProductInOrders: false,
     getOrders: false,
+    getReturn: false
   },
   error: {},
 };
@@ -281,6 +297,41 @@ const adminAppSlice = createSlice({
         state.productInOrder.items![index] = payload.data;
       }
     });
+
+    // ============================
+    // RETURNS
+    // ============================
+    builder.addCase(getReturns.fulfilled, (state, { payload, meta: { arg } }) => {
+      state.fetchingStatus.getReturn = false;
+      state.return.items = payload.items;
+      state.return.count = payload.count;
+      state.return.input = { ...state.return.input, ...arg };
+    });
+    builder.addCase(getReturns.pending, handlePending('getReturns'));
+    builder.addCase(getReturns.rejected, handleReject('getReturns'));
+    builder.addCase(addReturn.fulfilled, (state, { payload }) => {
+      state.return.items?.unshift(payload.data);
+      if (state.return.items?.length === state.return.input.pageSize) {
+        state.return.items?.pop();
+      }
+      state.return.itemFullDataById[payload.data.id] = payload.data;
+      state.return.count++;
+    });
+    builder.addCase(deleteReturnById.fulfilled, (state, { payload, meta: { arg } }) => {
+      state.return.items = state.return.items?.filter((item) => item.id !== arg) || null;
+      delete state.return.itemFullDataById[payload.data.id];
+    });
+    builder.addCase(getReturnById.fulfilled, (state, { payload }) => {
+      state.return.itemFullDataById[payload.data.id] = payload.data;
+    });
+    builder.addCase(updateReturnById.fulfilled, (state, { payload, meta: { arg } }) => {
+      state.return.itemFullDataById[arg.id] = payload.data;
+      const index = state.return.items?.findIndex((item) => item.id === arg.id);
+      if (typeof index === 'number' && index > -1) {
+        state.return.items![index] = payload.data;
+      }
+    });
+
   },
 });
 
