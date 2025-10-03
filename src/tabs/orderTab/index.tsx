@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AddUpdateOrderForm, ViewOrder, StatusBadge, ViewReturn, ReturnRow } from "./components";
 import { getOrders } from "@/redux/slices/app/orderApiThunk";
 import { IoMdRefresh } from "react-icons/io";
+import ReturnTable from "./ReturnTab";
 
 /** ------------- Dummy Return History data ------------- */
 const DUMMY_RETURNS: ReturnRow[] = [
@@ -142,10 +143,7 @@ export default function Order() {
 
             // Amount Returned derived from ProductInOrder
             {
-              accessKey: "ProductInOrder",
-              label: "Amt Recv",
-              align: "left",
-              format: (val, rowValues) => {
+              accessKey: "ProductInOrder", label: "Amt Recv", align: "left", format: (val, rowValues) => {
                 const lineTotal = (val || []).reduce(
                   (acc: number, curr: any) => acc + (Number(curr.sellPrice) * Number(curr.quantity)),
                   0
@@ -160,9 +158,7 @@ export default function Order() {
 
             // Total derived from ProductInOrder minus discount
             {
-              accessKey: "ProductInOrder",
-              label: "Total",
-              align: "left",
+              accessKey: "ProductInOrder", label: "Total", align: "left",
               format: (val, rowValues) => {
                 const lineTotal = (val || []).reduce(
                   (acc: number, curr: any) => acc + (Number(curr.sellPrice) * Number(curr.quantity)),
@@ -174,18 +170,10 @@ export default function Order() {
             },
 
             // Status with badge
-            {
-              accessKey: "status",
-              label: "Status",
-              align: "left",
-              format: (val, row) => <StatusBadge status={row.status || ""} />
-            },
+            { accessKey: "status", label: "Status", align: "left", format: (val, row) => <StatusBadge status={row.status || ""} /> },
 
             {
-              accessKey: "id",
-              label: "Action",
-              align: "left",
-              format: (val, rowValues) => (
+              accessKey: "id", label: "Action", align: "left", format: (val, rowValues) => (
                 <Flex gap={4} align='center'>
                   <AddUpdateOrderForm initialValues={rowValues} type="Update" />
                   {/* <DeleteOrderHandlerButton orderId={val} /> */}
@@ -201,25 +189,25 @@ export default function Order() {
         />
       </Box>
 
-      {/* Return History */}
-      <Heading fontFamily="poppins" fontSize="2xl" fontWeight="bold" mb={2}>Return History</Heading>
+      {/* ////////////////////////////////////////// Return History ////////////////////////////////////// */}
+
+      <ReturnTable />
+      {/* <Heading fontFamily="poppins" fontSize="2xl" fontWeight="bold" mb={2}>Return History</Heading>
       <Text mb={3}>All saved returns</Text>
 
-      {/* Return Search */}
+
       <Flex align="center" gap={3} mb={3}>
         <Input
           border="2px solid"
           px={4}
           placeholder="Search returns by product name, reason, or id"
-          onChange={(e) => {}}
+          onChange={(e) => { }}
           value={undefined as any}
           borderColor="gray.300"
           bg="white"
         />
-        {/* Controlled input above; implement below for clarity */}
       </Flex>
 
-      {/* Controlled state for return search (placed after to keep JSX tidy) */}
       <style jsx>{``}</style>
       <Box display="none">{returnSearch}</Box>
       <script dangerouslySetInnerHTML={{ __html: '' }} />
@@ -239,7 +227,7 @@ export default function Order() {
       <Box border='1px solid var(--chakra-colors-gray-400)' borderRadius='md'>
         <Table
           rows={filteredReturns}
-          onPaginationChange={async () => { /* no-op for dummy data */ }}
+          onPaginationChange={async () => { }}
           columns={[
             {
               accessKey: "id",
@@ -270,7 +258,7 @@ export default function Order() {
           pageSize={filteredReturns.length || 10}
           pageNumber={1}
         />
-      </Box>
+      </Box> */}
     </Box>
   )
 }
