@@ -40,7 +40,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
             inventory: true,
           }
         },
-        ReturnOrder: true,
+        
         createdBy: {
           select: {
             id: true,
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             inventory: true,
           },
         },
-        ReturnOrder: true,
+
         createdBy: {
           select: { id: true, email: true, phone: true },
         },

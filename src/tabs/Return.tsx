@@ -25,8 +25,7 @@ interface CartItem {
 }
 
 const currency = (n: number) => `${n.toFixed(2)}rs`;
-
-const ReturnPage: React.FC<{ orderId: number }> = ({ orderId }) => {
+export default function ReturnPage() {
   const dispatch = useAppDispatch();
 
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -238,4 +237,4 @@ const ReturnPage: React.FC<{ orderId: number }> = ({ orderId }) => {
   );
 };
 
-export default ReturnPage;
+
