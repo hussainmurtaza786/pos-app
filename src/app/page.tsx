@@ -1,9 +1,9 @@
 'use client';
-import { Dashboard } from '@/tabs/Dashboard';
+// import { Dashboard } from '@/tabs/Dashboard';
 import Expenses from '@/tabs/Expenses';
 import { Layout } from '@/tabs/Layout';
 import { Reports } from '@/tabs/Reports';
-import Returns from '@/tabs/Return';
+// import Returns from '@/tabs/Return';
 import React, { useState, useEffect } from 'react';
 import Sales from '@/tabs/Sales';
 import { getCookie } from '@/utils';
@@ -12,7 +12,8 @@ import { useRouter } from 'next/navigation';
 import Inventory from '@/tabs/inventoryTab';
 import Product from '@/tabs/productTab';
 import Order from '@/tabs/orderTab';
-
+import Dashboard from '../tabs/dashboard/index';
+import ReturnPage from '@/tabs/Return';
 function App() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -35,7 +36,7 @@ function App() {
       case 'sales': return <Sales />;
       case 'orders': return <Order />;
       case 'products': return <Product />;
-      case 'returns': return <Returns />;
+      case 'returns': return <ReturnPage />;
       case 'inventory': return <Inventory />;
       case 'reports': return <Reports />;
       case 'expenses': return <Expenses />;
