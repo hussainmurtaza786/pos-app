@@ -1,16 +1,8 @@
 'use client';
 import React, { useEffect, useMemo } from 'react';
-import {
-  Box,
-  Flex,
-  Heading,
-  Text,
-  SimpleGrid,
-  Icon as ChakraIcon,
-} from '@chakra-ui/react';
+import { Box, Flex, Heading, Text, SimpleGrid, Icon as ChakraIcon, } from '@chakra-ui/react';
 import { FiAlertTriangle } from 'react-icons/fi';
-
-import type { ReturnOrder,  } from '@/prisma/customTypes';
+import type { ReturnOrder, } from '@/prisma/customTypes';
 import { useAppDispatch, useAppSelector } from '@/redux/store';
 import { getReturns } from '@/redux/slices/app/returnApiThunk';
 import { ReturnOrderProduct } from '@prisma/client';

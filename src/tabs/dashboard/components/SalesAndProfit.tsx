@@ -1,14 +1,6 @@
 'use client';
 import React, { useEffect, useMemo } from 'react';
-import {
-    Box,
-    Flex,
-    Heading,
-    Text,
-    SimpleGrid,
-    Stack,
-    Icon as ChakraIcon,
-} from '@chakra-ui/react';
+import { Box, Flex, Heading, Text, SimpleGrid, Stack, Icon as ChakraIcon, } from '@chakra-ui/react';
 import { FaDollarSign } from 'react-icons/fa';
 import { BiShoppingBag, BiTrendingUp } from 'react-icons/bi';
 
@@ -17,12 +9,7 @@ import { getOrders } from '@/redux/slices/app/orderApiThunk';
 import { getReturns } from '@/redux/slices/app/returnApiThunk';
 import { getInventories } from '@/redux/slices/app/inventoryApiThunks';
 import { ReturnOrderProduct as AppReturnOrderProduct, } from '@prisma/client';
-import type {
-    Order as AppOrder,
-    ProductInOrder as AppProductInOrder,
-    ReturnOrder as AppReturnOrder,
-    Inventory as AppInventory,
-} from '@/prisma/customTypes';
+import type { Order as AppOrder, ProductInOrder as AppProductInOrder, ReturnOrder as AppReturnOrder, Inventory as AppInventory, } from '@/prisma/customTypes';
 
 /* ---------------- helpers ---------------- */
 
