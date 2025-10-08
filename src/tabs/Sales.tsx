@@ -263,6 +263,7 @@ const Order: React.FC = () => {
               <HStack>
                 <Text>Discount:</Text><Spacer />
                 <Input
+                  min={0}
                   type="number" size="sm" w="28" textAlign="right"
                   value={discountValue === "" ? "" : discountValue}
                   onChange={(e) => {
@@ -274,7 +275,7 @@ const Order: React.FC = () => {
                   placeholder="0"
                 />
               </HStack>
-              <HStack mt={2}><Text>Amount Received:</Text><Spacer /><Input type="number" size="sm" w="28" textAlign="right" value={amountReceived === "" ? "" : amountReceived} onChange={(e) => {
+              <HStack mt={2}><Text>Amount Received:</Text><Spacer /><Input min={0} type="number" size="sm" w="28" textAlign="right" value={amountReceived === "" ? "" : amountReceived} onChange={(e) => {
                 const v = e.target.value; if (v === "") return setAmountReceived("");
                 const n = Number(v); setAmountReceived(Number.isNaN(n) ? "" : n);
               }} placeholder="0" /></HStack>

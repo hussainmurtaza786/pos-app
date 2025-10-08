@@ -13,9 +13,9 @@ export interface OrderGetOutput {
 const UpdateOrderSchema = yup.object({
   id: yup.number().required(),
   description: yup.string().nullable(),
-  // discount: yup.number().required(),
+  discount: yup.number().required(),
   status: yup.mixed<Status>(),
-  // amountReceived: yup.number().required(),
+  amountReceived: yup.number().required(),
 });
 export type OrderPostInput = yup.InferType<typeof UpdateOrderSchema>;
 
@@ -40,7 +40,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
             inventory: true,
           }
         },
-        
+
         createdBy: {
           select: {
             id: true,

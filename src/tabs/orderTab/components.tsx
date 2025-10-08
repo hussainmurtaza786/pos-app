@@ -78,6 +78,9 @@ export function AddUpdateOrderForm({ initialValues, type = 'Add' }: AddUpdateFor
                 fields={[
                   { type: "text", name: "description", label: "Description", fieldArea: 12, notRequired: true },
                   { type: "select", options: ["Pending", "Completed"], name: "status", label: "Status", fieldArea: 12, notRequired: true },
+                  { type: "text", name: "amountReceived", label: "Amount Received", fieldArea: 12, },
+                  { type: "text", name: "discount", label: "Discount", fieldArea: 12, },
+
                   { type: "submit", name: "submit-btn", label: `${type} Order`, fieldArea: 12, inputProps: { size: 'sm' } },
                 ]}
               />

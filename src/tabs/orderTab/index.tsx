@@ -171,15 +171,30 @@ export default function Order() {
 
             // Status with badge
             { accessKey: "status", label: "Status", align: "left", format: (val, row) => <StatusBadge status={row.status || ""} /> },
-
             {
-              accessKey: "id", label: "Action", align: "left", format: (val, rowValues) => (
-                <Flex gap={4} align='center'>
-                  <AddUpdateOrderForm initialValues={rowValues} type="Update" />
+              accessKey: "id",
+              label: "Action",
+              align: "left",
+              format: (val, rowValues) => (
+                <Flex gap={4} align="center">
+                  {rowValues.status?.toLowerCase() === "pending" ? (
+                    <AddUpdateOrderForm initialValues={rowValues} type="Update" />
+                  ) : (
+                    <Text fontSize="sm" color="gray.500">Can't Update</Text>
+                  )}
                   {/* <DeleteOrderHandlerButton orderId={val} /> */}
                 </Flex>
               )
-            },
+            }
+
+            // {
+            //   accessKey: "id", label: "Action", align: "left", format: (val, rowValues) => (
+            //     <Flex gap={4} align='center'>
+            //       <AddUpdateOrderForm initialValues={rowValues} type="Update" />
+            //       {/* <DeleteOrderHandlerButton orderId={val} /> */}
+            //     </Flex>
+            //   )
+            // },
           ]}
           dataFetchingAsync
           loading={isFetchingOrder}
@@ -192,73 +207,6 @@ export default function Order() {
       {/* ////////////////////////////////////////// Return History ////////////////////////////////////// */}
 
       <ReturnTable />
-      {/* <Heading fontFamily="poppins" fontSize="2xl" fontWeight="bold" mb={2}>Return History</Heading>
-      <Text mb={3}>All saved returns</Text>
-
-
-      <Flex align="center" gap={3} mb={3}>
-        <Input
-          border="2px solid"
-          px={4}
-          placeholder="Search returns by product name, reason, or id"
-          onChange={(e) => { }}
-          value={undefined as any}
-          borderColor="gray.300"
-          bg="white"
-        />
-      </Flex>
-
-      <style jsx>{``}</style>
-      <Box display="none">{returnSearch}</Box>
-      <script dangerouslySetInnerHTML={{ __html: '' }} />
-
-      <Flex align="center" gap={3} mb={3} mt={-12}>
-        <Input
-          border="2px solid"
-          px={4}
-          placeholder="Search returns by product name, reason, or id"
-          value={returnSearch}
-          onChange={(e) => setReturnSearch(e.target.value)}
-          borderColor="gray.300"
-          bg="white"
-        />
-      </Flex>
-
-      <Box border='1px solid var(--chakra-colors-gray-400)' borderRadius='md'>
-        <Table
-          rows={filteredReturns}
-          onPaginationChange={async () => { }}
-          columns={[
-            {
-              accessKey: "id",
-              label: "Return Id",
-              align: "left",
-              format: (_val: any, row: ReturnRow) => <ViewReturn ret={row} />
-            },
-            {
-              accessKey: "createdAt",
-              label: "Date",
-              align: "left",
-              format: (val: string) => new Date(val).toLocaleString()
-            },
-            {
-              accessKey: "products",
-              label: "Total Amount",
-              align: "left",
-              format: (val: ReturnRow["products"]) => {
-                const t = (val || []).reduce((acc: number, r: any) => acc + r.sellPrice * r.quantity, 0);
-                return `Rs ${t.toFixed(2)}`;
-              }
-            },
-            { accessKey: "description", label: "Reason", align: "left" },
-          ]}
-          dataFetchingAsync={false}
-          loading={false}
-          totalRows={filteredReturns.length}
-          pageSize={filteredReturns.length || 10}
-          pageNumber={1}
-        />
-      </Box> */}
     </Box>
   )
 }

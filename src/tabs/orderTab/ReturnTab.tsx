@@ -1,11 +1,10 @@
 "use client";
 
-import { 
+import {
     Box,
     Flex,
     Heading,
     Text,
-    Icon,
     IconButton,
     Input,
 } from "@chakra-ui/react";
