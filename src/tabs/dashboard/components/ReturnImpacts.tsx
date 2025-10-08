@@ -1,11 +1,10 @@
 'use client';
 import React, { useEffect, useMemo } from 'react';
-import { Box, Flex, Heading, Text, SimpleGrid, Icon as ChakraIcon, } from '@chakra-ui/react';
+import { Box, Flex, Heading, Text, SimpleGrid, Icon as ChakraIcon } from '@chakra-ui/react';
 import { FiAlertTriangle } from 'react-icons/fi';
-import type { ReturnOrder, } from '@/prisma/customTypes';
+import type { ReturnOrder } from '@/prisma/customTypes';
 import { useAppDispatch, useAppSelector } from '@/redux/store';
 import { getReturns } from '@/redux/slices/app/returnApiThunk';
-import { ReturnOrderProduct } from '@prisma/client';
 
 // ---- helpers ----
 const formatCurrency = (amount: number) =>
@@ -28,9 +27,9 @@ const isSameMonth = (a: Date, b: Date) =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 
 /**
- * ReturnImpacts
+ * ReturnImpacts (cash-based)
  * - Loads returns via Redux thunk
- * - Sums sellPrice * quantity for Today / Month / Year
+ * - Sums `returnAmount` for Today / Month / Year
  * - Renders the red impact card when any value > 0
  */
 export default function ReturnImpacts() {
@@ -56,12 +55,8 @@ export default function ReturnImpacts() {
     let y = 0;
 
     for (const r of returns) {
-      const d = toDate(r.createdAt as any);
-      const amount = (r.ReturnOrderProduct as ReturnOrderProduct[]).reduce(
-        (sum, line) =>
-          sum + Number(line.sellPrice || 0) * Number(line.quantity || 0),
-        0
-      );
+      const d = toDate((r as any).createdAt);
+      const amount = Number((r as any).returnAmount || 0); // <-- use CASH RETURNED
 
       if (isSameDay(d, today)) t += amount;
       if (isSameMonth(d, now)) m += amount;
@@ -71,9 +66,7 @@ export default function ReturnImpacts() {
     return { todaysReturns: t, monthlyReturns: m, yearlyReturns: y };
   }, [returns]);
 
-  const show =
-    todaysReturns > 0 || monthlyReturns > 0 || yearlyReturns > 0;
-
+  const show = todaysReturns > 0 || monthlyReturns > 0 || yearlyReturns > 0;
   if (!show) return null;
 
   return (
@@ -90,21 +83,21 @@ export default function ReturnImpacts() {
               <Heading as="p" fontSize={{ base: 'xl', lg: '2xl' }} color="red.600">
                 {formatCurrency(todaysReturns)}
               </Heading>
-              <Text color="red.700">Today&apos;s Returns</Text>
+              <Text color="red.700">Today&apos;s Returns (Cash)</Text>
             </Box>
 
             <Box textAlign="center">
               <Heading as="p" fontSize={{ base: 'xl', lg: '2xl' }} color="red.600">
                 {formatCurrency(monthlyReturns)}
               </Heading>
-              <Text color="red.700">Monthly Returns</Text>
+              <Text color="red.700">Monthly Returns (Cash)</Text>
             </Box>
 
             <Box textAlign="center">
               <Heading as="p" fontSize={{ base: 'xl', lg: '2xl' }} color="red.600">
                 {formatCurrency(yearlyReturns)}
               </Heading>
-              <Text color="red.700">Yearly Returns</Text>
+              <Text color="red.700">Yearly Returns (Cash)</Text>
             </Box>
           </SimpleGrid>
         </Box>

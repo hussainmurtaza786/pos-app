@@ -56,7 +56,6 @@ model Product {
 
   // ✅ SKU unique per user (not global)
   @@unique([sku, createdById])
-
   @@index([name])
 }
 
@@ -110,11 +109,11 @@ model ProductInOrder {
 }
 
 model ReturnOrder {
-  id          Int     @id @default(autoincrement())
-  description String?
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime? @updatedAt
+  id           Int       @id @default(autoincrement())
+  description  String?
+  returnAmount Int?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime? @updatedAt
 
   createdBy   User?   @relation(fields: [createdById], references: [id])
   createdById String?
@@ -137,7 +136,7 @@ model ReturnOrderProduct {
 }
 
 model Expense {
-  id        String  @id @default(uuid())
+  id        String    @id @default(uuid())
   reason    String?
   amount    Float
   createdAt DateTime  @default(now())
@@ -150,11 +149,11 @@ model Expense {
 }
 
 model Category {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   name        String
-  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdBy   User      @relation(fields: [createdById], references: [id])
   createdById String
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
   updatedAt   DateTime? @updatedAt
 
   products Product[]

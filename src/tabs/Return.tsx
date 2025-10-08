@@ -1,5 +1,5 @@
 'use client';
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Box, Flex, Stack, Heading, Text, Input, Badge, IconButton,
   Button, HStack, VStack, Spacer,
@@ -8,9 +8,6 @@ import { toaster } from "@/components/ui/toaster";
 import { BiMinus, BiPlus, BiX } from "react-icons/bi";
 import { CgShoppingCart } from "react-icons/cg";
 import SearchProduct from "./common/SearchProduct";
-
-// hooks + slice actions
-
 
 // If you have Prisma types:
 import type { Product as PrismaProduct } from "@prisma/client";
@@ -25,12 +22,16 @@ interface CartItem {
 }
 
 const currency = (n: number) => `${n.toFixed(2)}rs`;
+
 export default function ReturnPage() {
   const dispatch = useAppDispatch();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [reason, setReason] = useState<string>("");
+
+  // NEW: cashier cash given to customer
+  const [cashReturned, setCashReturned] = useState<number | "">("");
 
   const borderCol = "gray.200";
 
@@ -76,27 +77,40 @@ export default function ReturnPage() {
     [cart]
   );
 
-  // ---- Save Return (now calls redux thunk) ----
+  // Keep cashReturned in sync with subtotal when user hasn't typed anything yet.
+  // If they edit it, we keep their manual value.
+  useEffect(() => {
+    if (cashReturned === "" || cashReturned === undefined || cashReturned === null) {
+      setCashReturned(Number(subtotal.toFixed(2)));
+    }
+  }, [subtotal]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ---- Save Return (redux thunk -> API) ----
   const handleSubmit = async () => {
     if (cart.length === 0) {
       toaster.create({ type: "warning", title: "Cart is empty", closable: true });
       return;
     }
 
+    const finalCash =
+      cashReturned === "" || Number.isNaN(Number(cashReturned))
+        ? Number(subtotal.toFixed(2))
+        : Number(cashReturned);
+
     try {
       setSubmitting(true);
 
       await dispatch(
-        addReturn({ // or however you’re tracking the order
-          description: reason, // use reason here
+        addReturn({
+          description: reason,
+          returnAmount: finalCash, // <- send to API
           products: cart.map(i => ({
             productId: i.product.id,
             quantity: i.quantity,
             sellPrice: i.sellPrice,
           })),
-        })
+        } as any) // If your ReturnPutInput type already includes returnAmount, you can remove "as any"
       ).unwrap();
-
 
       toaster.create({
         type: "success",
@@ -106,11 +120,12 @@ export default function ReturnPage() {
 
       setCart([]);
       setReason("");
+      setCashReturned("");
     } catch (err: any) {
       toaster.create({
         type: "error",
         title: "Failed to save return",
-        description: err.message ?? "Unknown error",
+        description: err?.message ?? "Unknown error",
       });
     } finally {
       setSubmitting(false);
@@ -133,7 +148,7 @@ export default function ReturnPage() {
 
       {/* Right: Cart */}
       <Box
-        w={{ base: "full", lg: "420px" }}
+        w={{ base: "full", lg: "480px" }}
         bg="white"
         rounded="xl"
         shadow="sm"
@@ -155,22 +170,16 @@ export default function ReturnPage() {
               <Flex align="center" justify="space-between">
                 <Text fontWeight="medium">{item.product.name}</Text>
                 <HStack>
-                  <IconButton size="sm" variant="ghost"
-                    aria-label="Decrease"
-                    onClick={() => updateCartQuantity(item.product.id, -1)}>
+                  <IconButton size="sm" variant="ghost" aria-label="Decrease" onClick={() => updateCartQuantity(item.product.id, -1)}>
                     <BiMinus size={18} />
                   </IconButton>
                   <Text fontWeight="semibold" fontSize="lg" w="6" textAlign="center">
                     {item.quantity}
                   </Text>
-                  <IconButton size="sm" variant="ghost"
-                    aria-label="Increase"
-                    onClick={() => updateCartQuantity(item.product.id, 1)}>
+                  <IconButton size="sm" variant="ghost" aria-label="Increase" onClick={() => updateCartQuantity(item.product.id, 1)}>
                     <BiPlus size={18} />
                   </IconButton>
-                  <IconButton size="sm" variant="ghost"
-                    aria-label="Remove"
-                    onClick={() => removeFromCart(item.product.id)}>
+                  <IconButton size="sm" variant="ghost" aria-label="Remove" onClick={() => removeFromCart(item.product.id)}>
                     <BiX color="red" size={18} />
                   </IconButton>
                 </HStack>
@@ -201,7 +210,9 @@ export default function ReturnPage() {
                 <Spacer />
                 <Text>{currency(subtotal)}</Text>
               </HStack>
-              <HStack align="start" mt={2}>
+
+              {/* Reason */}
+              <HStack align="start">
                 <Text>Reason:</Text>
                 <Spacer />
                 <Input
@@ -211,11 +222,38 @@ export default function ReturnPage() {
                   onChange={(e) => setReason(e.target.value)}
                 />
               </HStack>
-              <Box mt={2} borderTop="1px solid" borderColor={borderCol} />
-              <HStack fontSize="lg" fontWeight="bold" pt={1}>
-                <Text>Total Refund:</Text>
+
+              {/* NEW: Cash Returned input */}
+              <HStack align="start">
+                <Text>Cash Returned:</Text>
                 <Spacer />
-                <Text>{currency(subtotal)}</Text>
+                <Input
+                  type="number"
+                  size="sm"
+                  w="36"
+                  textAlign="right"
+                  value={cashReturned === "" ? "" : cashReturned}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === "") return setCashReturned("");
+                    const n = Number(v);
+                    setCashReturned(Number.isNaN(n) ? "" : n);
+                  }}
+                  placeholder={subtotal.toFixed(2)}
+                />
+              </HStack>
+
+              <Box borderTop="1px solid" borderColor={borderCol} />
+              <HStack fontSize="lg" fontWeight="bold" pt={1}>
+                <Text>Total Refund (Cash):</Text>
+                <Spacer />
+                <Text>
+                  {currency(
+                    cashReturned === "" || Number.isNaN(Number(cashReturned))
+                      ? subtotal
+                      : Number(cashReturned)
+                  )}
+                </Text>
               </HStack>
             </VStack>
 
@@ -235,6 +273,4 @@ export default function ReturnPage() {
       </Box>
     </Flex>
   );
-};
-
-
+}

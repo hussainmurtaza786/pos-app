@@ -7,12 +7,14 @@ import { verifyAuthorization } from "@/utils";
 import { Prisma } from "@prisma/client";
 import { ReturnOrder } from "@/prisma/customTypes";
 
-// =====================
-// Validation Schemas
-// =====================
-// NOTE: removed orderId; payload now is description + products
+/* =====================
+   Validation Schemas
+===================== */
+// Accept optional returnAmount (cash given back to customer).
+// If missing or invalid, we will compute it from products on the server.
 const AddReturnSchema = yup.object({
   description: yup.string().nullable(),
+  returnAmount: yup.number().nullable(), // NEW
   products: yup
     .array()
     .of(
@@ -27,9 +29,9 @@ const AddReturnSchema = yup.object({
 });
 export type ReturnPutInput = yup.InferType<typeof AddReturnSchema>;
 
-// =====================
-// API Types
-// =====================
+/* =====================
+   API Types
+===================== */
 export interface ReturnPutOutput {
   data: ReturnOrder;
 }
@@ -37,28 +39,38 @@ export interface ReturnsGetOutput {
   data: { count: number; items: ReturnOrder[] };
 }
 
-// =====================
-// CREATE (PUT) with stock increment
-// =====================
+/* =====================
+   PUT / Create
+   - Validates that returned qty ≤ sold qty
+   - Increments inventory
+   - Persists returnAmount (cash returned to customer)
+===================== */
 export async function PUT(req: NextRequest) {
   try {
-    const { description, products } = AddReturnSchema.validateSync(
+    const { description, products, returnAmount } = AddReturnSchema.validateSync(
       await req.json(),
-      {
-        stripUnknown: true,
-        abortEarly: false,
-      }
+      { stripUnknown: true, abortEarly: false }
     );
 
     const user = await verifyAuthorization(req);
-    if (!user.id) {
+    if (!user?.id) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Compute subtotal from line items
+    const computedSubtotal = products.reduce(
+      (sum, p) => sum + Number(p.sellPrice || 0) * Number(p.quantity || 0),
+      0
+    );
+    const finalReturnAmount =
+      typeof returnAmount === "number" && returnAmount >= 0
+        ? returnAmount
+        : computedSubtotal;
+
     const returnOrder = await prisma.$transaction(
       async (tx) => {
-        // VALIDATION PHASE: ensure each requested quantity <= sold quantity
-        // soldQuantity per product = SUM(purchasedQuantity - availableQuantity) across all inventories for that user+product
+        // VALIDATION: ensure requested return qty ≤ sold qty
+        // sold qty per product = SUM(purchasedQuantity - availableQuantity)
         for (const line of products) {
           const invRows = await tx.inventory.findMany({
             where: { createdById: user.id, productId: line.productId },
@@ -71,13 +83,13 @@ export async function PUT(req: NextRequest) {
           );
 
           if (line.quantity > sold) {
-            // keep the same error format you used before
-            throw new Error(`INVALID_RETURN:${line.productId}:${sold}:${line.quantity}`);
+            throw new Error(
+              `INVALID_RETURN:${line.productId}:${sold}:${line.quantity}`
+            );
           }
         }
 
-        // All validated: increment availableQuantity in inventories.
-        // We'll increment across all matching inventories (same as prior behavior using updateMany).
+        // Increment available quantity across all inventories for that product+user
         for (const line of products) {
           await tx.inventory.updateMany({
             where: { createdById: user.id, productId: line.productId },
@@ -85,10 +97,12 @@ export async function PUT(req: NextRequest) {
           });
         }
 
-        // create return order + items (ReturnOrder now has its own `id`)
+        // Create the return order and line items
         return tx.returnOrder.create({
           data: {
             description,
+
+            returnAmount: finalReturnAmount, // <- persist cash returned
             createdById: user.id,
             ReturnOrderProduct: {
               createMany: {
@@ -101,12 +115,8 @@ export async function PUT(req: NextRequest) {
             },
           },
           include: {
-            ReturnOrderProduct: {
-              include: { product: true },
-            },
-            createdBy: {
-              select: { id: true, email: true, phone: true },
-            },
+            ReturnOrderProduct: { include: { product: true } },
+            createdBy: { select: { id: true, email: true, phone: true } },
           },
         });
       },
@@ -130,22 +140,22 @@ export async function PUT(req: NextRequest) {
         { status: 409 }
       );
     }
-    if (error.errors) {
+    if (error?.errors) {
       return Response.json(
         { error: "API input error", message: error.errors[0] },
         { status: 400 }
       );
     }
     return Response.json(
-      { error: "Something went wrong", message: error.message },
+      { error: "Something went wrong", message: error?.message ?? "Unknown error" },
       { status: 500 }
     );
   }
 }
 
-// =====================
-// GET (Paginated)
-// =====================
+/* =====================
+   GET / List (Paginated)
+===================== */
 const GetReturnsSchema = yup.object({
   pageNumber: yup.number(),
   pageSize: yup.number(),
@@ -157,23 +167,27 @@ export type ReturnsGetInput = yup.InferType<typeof GetReturnsSchema>;
 
 export async function GET(req: NextRequest) {
   try {
-    const { pageNumber = 1, pageSize = 10, search = "", searchField = "id", }
-      = GetReturnsSchema.validateSync(parseQueryParams(req), {
-        stripUnknown: true,
-        abortEarly: false,
-      });
+    const {
+      pageNumber = 1,
+      pageSize = 10,
+      search = "",
+      searchField = "id",
+    } = GetReturnsSchema.validateSync(parseQueryParams(req), {
+      stripUnknown: true,
+      abortEarly: false,
+    });
 
     const user = await verifyAuthorization(req);
-    if (!user.id) {
+    if (!user?.id) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const where: Record<string, any> = { createdById: user.id };
-
-    if (search && searchField === "id")
+    if (search && searchField === "id") {
       where["id"] = { equals: Number(search.trim()) };
-    else if (search)
+    } else if (search) {
       where[searchField] = { contains: search.trim(), mode: "insensitive" };
+    }
 
     const [returns, count] = await prisma.$transaction([
       prisma.returnOrder.findMany({
@@ -183,9 +197,7 @@ export async function GET(req: NextRequest) {
         where,
         include: {
           ReturnOrderProduct: { include: { product: true } },
-          createdBy: {
-            select: { id: true, email: true, phone: true },
-          },
+          createdBy: { select: { id: true, email: true, phone: true } },
         },
       }),
       prisma.returnOrder.count({ where }),
@@ -196,13 +208,14 @@ export async function GET(req: NextRequest) {
       { status: 200 }
     );
   } catch (error: any) {
-    if (error.errors)
+    if (error?.errors) {
       return Response.json(
         { error: "API input error", message: error.errors[0] },
         { status: 400 }
       );
+    }
     return Response.json(
-      { error: "Something went wrong", message: error.message },
+      { error: "Something went wrong", message: error?.message ?? "Unknown error" },
       { status: 500 }
     );
   }
