@@ -3,7 +3,7 @@ import { addInventory, deleteInventoryById, getInventories, getInventoryById, up
 import { addProduct, deleteProductById, getProductById, getProducts, updateProductById, } from './productApiThunks';
 
 import { Inventory, Order, Product, ProductInOrder, ReturnOrder } from '@/prisma/customTypes';
-import { Category } from '@prisma/client';
+import { Category, Expense } from '@prisma/client';
 import { addCategory, getCategories } from './categoryApiThunks ';
 import { ProductsGetInput } from '@/app/api/product/route';
 import { InventoriesGetInput } from '@/app/api/inventory/route';
@@ -21,6 +21,7 @@ import { handlePending, handleReject } from '@/redux/helper';
 import { addOrder, deleteOrderById, getOrderById, getOrders, updateOrderById } from './orderApiThunk';
 import { ReturnsGetInput } from '@/app/api/return/route';
 import { addReturn, deleteReturnById, getReturnById, getReturns, updateReturnById } from './returnApiThunk';
+import { addExpense, deleteExpenseById, getExpenses, updateExpenseById } from './expenseApiThunk';
 
 // -------------------------
 // State Interface
@@ -62,12 +63,19 @@ interface AdminAppState {
     loading: boolean;
     error: string | null;
   };
+  expense: {
+    items: Expense[];
+    count: number;
+    loading: boolean;
+    error: string | null;
+  };
   fetchingStatus: {
     getInventories: boolean;
     getProducts: boolean;
     getProductInOrders: boolean;
     getOrders: boolean;
     getReturn: boolean
+    getExpenses: boolean
   };
   error: {};
 }
@@ -112,12 +120,19 @@ const initialState: AdminAppState = {
     loading: false,
     error: null,
   },
+  expense: {
+    items: [],
+    count: 0,
+    loading: false,
+    error: null,
+  },
   fetchingStatus: {
     getInventories: false,
     getProducts: false,
     getProductInOrders: false,
     getOrders: false,
-    getReturn: false
+    getReturn: false,
+    getExpenses: false
   },
   error: {},
 };
@@ -331,6 +346,32 @@ const adminAppSlice = createSlice({
         state.return.items![index] = payload.data;
       }
     });
+    // ============================
+    // EXPENSES
+    // ============================
+    builder.addCase(getExpenses.fulfilled, (state, { payload }) => {
+      state.fetchingStatus.getExpenses = false;
+      state.expense.items = payload.data.items;
+      state.expense.count = payload.data.count;
+    });
+    builder.addCase(getExpenses.pending, handlePending('getExpenses'));
+    builder.addCase(getExpenses.rejected, handleReject('getExpenses'));
+
+    builder.addCase(addExpense.fulfilled, (state, { payload }) => {
+      state.expense.items.unshift(payload.data);
+      state.expense.count += 1;
+    });
+    builder.addCase(deleteExpenseById.fulfilled, (state, { payload }) => {
+      state.expense.items = state.expense.items.filter((item) => item.id !== payload.data.id);
+      state.expense.count -= 1;
+    });
+    builder.addCase(updateExpenseById.fulfilled, (state, { payload }) => {
+      const index = state.expense.items.findIndex((item) => item.id === payload.data.id);
+      if (index > -1) {
+        state.expense.items[index] = payload.data;
+      }
+    });
+
 
   },
 });
