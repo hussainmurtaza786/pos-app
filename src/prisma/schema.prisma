@@ -1,11 +1,8 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// This is your Prisma schema file
+// Learn more at: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
   // output   = "../src/generated/prisma"
 }
@@ -15,6 +12,10 @@ datasource db {
   // url      = env("DATABASE_URL")
   url      = env("POSTGRES_PRISMA_POOL_URL")
 }
+
+//////////////////////////////////////////////////
+// MODELS
+//////////////////////////////////////////////////
 
 model User {
   id        String    @id @default(cuid())
@@ -27,7 +28,6 @@ model User {
 
   inventories Inventory[]
   orders      Order[]
-  // returnOrders ReturnOrder[]
   expenses    Expense[]
   products    Product[]
   ReturnOrder ReturnOrder[]
@@ -36,7 +36,7 @@ model User {
 
 model Product {
   id          String  @id @default(cuid())
-  sku         String  @unique
+  sku         String
   name        String
   description String?
   price       Float
@@ -54,12 +54,14 @@ model Product {
   ProductInOrder       ProductInOrder[]
   ProductInReturnOrder ReturnOrderProduct[]
 
+  // ✅ SKU unique per user (not global)
+  @@unique([sku, createdById])
+
   @@index([name])
 }
 
 model Inventory {
   id                String  @id @default(cuid())
-  // name              String
   description       String?
   purchasedQuantity Int
   availableQuantity Int
@@ -88,16 +90,13 @@ model Order {
   createdBy   User   @relation(fields: [createdById], references: [id])
   createdById String
 
-  // products    Product[]
   ProductInOrder ProductInOrder[]
-  // ReturnOrder    ReturnOrder?
 }
 
 model ProductInOrder {
   orderId     Int
   productId   String
   inventoryId String?
-  // returnOrderId Int?
   quantity    Int
   sellPrice   Float
   createdAt   DateTime  @default(now())
@@ -111,7 +110,6 @@ model ProductInOrder {
 }
 
 model ReturnOrder {
-  // orderId     Int     @id
   id          Int     @id @default(autoincrement())
   description String?
 
@@ -121,15 +119,12 @@ model ReturnOrder {
   createdBy   User?   @relation(fields: [createdById], references: [id])
   createdById String?
 
-  // order Order @relation(fields: [orderId], references: [id])
-
   ReturnOrderProduct ReturnOrderProduct[]
 }
 
 model ReturnOrderProduct {
   returnOrderId Int
   productId     String
-  // inventoryId   String?
   quantity      Int
   sellPrice     Float
   createdAt     DateTime  @default(now())
@@ -142,10 +137,9 @@ model ReturnOrderProduct {
 }
 
 model Expense {
-  id          String  @id @default(uuid())
-  reason      String?
-  amount      Float
-
+  id        String  @id @default(uuid())
+  reason    String?
+  amount    Float
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 
@@ -156,18 +150,23 @@ model Expense {
 }
 
 model Category {
-  id   String @id @default(uuid())
-  name String @unique
-
-  createdBy   User      @relation(fields: [createdById], references: [id])
+  id          String   @id @default(uuid())
+  name        String
+  createdBy   User     @relation(fields: [createdById], references: [id])
   createdById String
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime @default(now())
   updatedAt   DateTime? @updatedAt
 
   products Product[]
+
+  // ✅ Category name unique per user (not global)
+  @@unique([name, createdById])
 }
 
-////////////////////// Enums //////////////////////
+//////////////////////////////////////////////////
+// ENUMS
+//////////////////////////////////////////////////
+
 enum UserRole {
   Admin
   Staff
