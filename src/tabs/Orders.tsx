@@ -109,7 +109,7 @@ const OrdersTable: React.FC = () => {
                         key={i}
                         size="sm"
                         onClick={() => setPageNumber(i + 1)}
-                        colorScheme={pageNumber === i + 1 ? "blue" : "gray"}
+                        color={pageNumber === i + 1 ? "blue" : "gray"}
                       >
                         {i + 1}
                       </Button>

@@ -92,7 +92,7 @@ const Products: React.FC = () => {
           </Text>
         </Box>
         <Button
-          colorScheme="blue"
+          color="blue"
           onClick={openAddModal}
           display="flex"
           alignItems="center"
@@ -119,10 +119,10 @@ const Products: React.FC = () => {
             align: 'left',
             format: (val, row) => (
               <Flex gap={2}>
-                <IconButton aria-label="Edit" size="sm" colorScheme="blue" onClick={() => openEditModal(row)}>
+                <IconButton aria-label="Edit" size="sm" color="blue" onClick={() => openEditModal(row)}>
                   <FiEdit2 />
                 </IconButton>
-                <IconButton aria-label="Delete" size="sm" colorScheme="red" onClick={() => handleDelete(val)}>
+                <IconButton aria-label="Delete" size="sm" color="red" onClick={() => handleDelete(val)}>
                   <BsTrash2 />
                 </IconButton>
               </Flex>
@@ -130,7 +130,6 @@ const Products: React.FC = () => {
           },
         ]}
           dataFetchingAsync
-          loading={loading}
           totalRows={count}
           pageSize={input.pageSize}
           pageNumber={input.pageNumber}
@@ -178,7 +177,7 @@ const Products: React.FC = () => {
             </Heading>
             <Input placeholder="Enter category name" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} mb={3} />
             <Flex gap={2}>
-              <Button colorScheme="blue" flex="1" onClick={handleAddCategory}>
+              <Button color="blue" flex="1" onClick={handleAddCategory}>
                 Add Category
               </Button>
               <Button flex="1" variant="outline" onClick={() => setShowCategoryModal(false)}>

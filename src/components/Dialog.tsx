@@ -58,7 +58,7 @@ export default function _Dialog() {
                             <p>{state.message}</p>
                         </Dialog.Body>
                         <Dialog.Footer>
-                            {((["error", "warning", "success", "info"] as (ShowDialogProps['type'])[]).includes(state.type)) && <Button px={5} size='sm' colorScheme='maroon' onClick={() => handleClose('ok')} >OK</Button>}
+                            {((["error", "warning", "success", "info"] as (ShowDialogProps['type'])[]).includes(state.type)) && <Button px={5} size='sm' color='maroon' onClick={() => handleClose('ok')} >OK</Button>}
                             {((["confirmation"] as (ShowDialogProps['type'])[]).includes(state.type)) && <Button size='sm' px='5' variant='outline' onClick={() => handleClose('yes')} >Yes</Button>}
                             {((["confirmation"] as (ShowDialogProps['type'])[]).includes(state.type)) && <Button size='sm' px='5' color='white' onClick={() => handleClose('no')} >No</Button>}
                             {/* <Dialog.ActionTrigger asChild>

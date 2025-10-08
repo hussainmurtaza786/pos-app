@@ -143,7 +143,7 @@ export default function _Table<T = { [k: string | number]: any }>({
     return (
         <Box {...tableContainerProps} >
             <ProgressHandler visibility={_loading ? 'visible' : "hidden"} maxW="full" value={null} size='xs' />
-            {/* <Progress visibility={_loading ? 'visible' : "hidden"} size='xs' colorScheme='maroon' bgColor='app.grey2' isIndeterminate /> */}
+            {/* <Progress visibility={_loading ? 'visible' : "hidden"} size='xs' color='maroon' bgColor='app.grey2' isIndeterminate /> */}
             <Table.ScrollArea borderWidth="1px" >
                 <Table.Root stickyHeader interactive size='md' >
                     <Table.Header >

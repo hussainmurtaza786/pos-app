@@ -40,7 +40,7 @@ export const FormConfirmationCheckBoxField = memo(({ type, name, label, required
         <GridItem colSpan={fieldArea} alignItems='end' >
             <FormControl aria-label={name} invalid={!!meta.error && meta.touched} required={required} errorText={meta.error}>
                 {/* {label && <FormLabel mb={1} fontSize='sm'>{label}{required && "*"}</FormLabel>} */}
-                <Checkbox checked={!!field.value} name={name} variant='subtle' colorScheme='blue' onBlur={field.onBlur} onCheckedChange={v => helpers.setValue(v.checked)} {...inputProps} >
+                <Checkbox checked={!!field.value} name={name} variant='subtle' color='blue' onBlur={field.onBlur} onCheckedChange={v => helpers.setValue(v.checked)} {...inputProps} >
                     {label}
                 </Checkbox>
             </FormControl>

@@ -147,7 +147,7 @@ export function ViewOrder({ orderId }: { orderId: number }) {
       size="sm"
     >
       <Dialog.Trigger asChild>
-        <Button variant="subtle" colorScheme="blue" size="sm">
+        <Button variant="subtle" color="blue" size="sm">
           View #{orderId}
         </Button>
       </Dialog.Trigger>
@@ -226,7 +226,7 @@ export function ViewReturn({ ret }: { ret: ReturnRow }) {
   return (
     <Dialog.Root scrollBehavior='inside' placement='center' size='sm'>
       <Dialog.Trigger asChild>
-        <Button variant='subtle' colorScheme='blue' size='sm'>View #{ret.id}</Button>
+        <Button variant='subtle' color='blue' size='sm'>View #{ret.id}</Button>
       </Dialog.Trigger>
       <Portal>
         <Dialog.Backdrop />

@@ -144,7 +144,7 @@ export default function ReturnPage() {
         <HStack mb={6}>
           <Box as={CgShoppingCart} boxSize={5} color="blue.600" />
           <Heading size="md">Return Cart</Heading>
-          <Badge colorScheme="blue" fontSize="0.8rem" rounded="full">
+          <Badge color="blue" fontSize="0.8rem" rounded="full">
             {cart.length} {cart.length === 1 ? "item" : "items"}
           </Badge>
         </HStack>
