@@ -79,26 +79,11 @@ export default function ReturnImpacts() {
           </Heading>
 
           <SimpleGrid columns={{ base: 1, sm: 3 }} gap={4}>
-            <Box textAlign="center">
-              <Heading as="p" fontSize={{ base: 'xl', lg: '2xl' }} color="red.600">
-                {formatCurrency(todaysReturns)}
-              </Heading>
-              <Text color="red.700">Today&apos;s Returns (Cash)</Text>
-            </Box>
+           
 
-            <Box textAlign="center">
-              <Heading as="p" fontSize={{ base: 'xl', lg: '2xl' }} color="red.600">
-                {formatCurrency(monthlyReturns)}
-              </Heading>
-              <Text color="red.700">Monthly Returns (Cash)</Text>
-            </Box>
+            
 
-            <Box textAlign="center">
-              <Heading as="p" fontSize={{ base: 'xl', lg: '2xl' }} color="red.600">
-                {formatCurrency(yearlyReturns)}
-              </Heading>
-              <Text color="red.700">Yearly Returns (Cash)</Text>
-            </Box>
+            
           </SimpleGrid>
         </Box>
       </Flex>

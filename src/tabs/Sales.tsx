@@ -1,7 +1,7 @@
 'use client';
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  Box, Flex, Stack, Heading, Text, Input, Badge, IconButton, Button, HStack, VStack, Spacer,
+  Box, Flex, Stack, Heading, Text, Input, Badge, IconButton, Button, HStack, VStack, Spacer, Switch
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { BiMinus, BiPlus, BiX } from "react-icons/bi";
@@ -12,6 +12,7 @@ import SearchProduct from "./common/SearchProduct";
 import type { OrderPutInput } from "@/app/api/order/route";
 import { addOrder } from "@/redux/slices/app/orderApiThunk";
 import { getInventoryForProduct } from "@/redux/slices/app/inventoryApiThunks";
+import type { Order as AppOrder, ProductInOrder as AppProductInOrder } from "@/prisma/customTypes";
 
 type Product = PrismaProduct;
 
@@ -24,6 +25,149 @@ interface CartItem {
 
 const currency = (n: number) => `${n.toFixed(2)}rs`;
 
+/** Print or preview the given HTML using a hidden iframe (no popup). */
+function printReceipt(html: string, opts: { preview?: boolean } = {}) {
+  const { preview = false } = opts;
+
+  if (preview) {
+    // For testing: just open a preview tab, don't auto-call print
+    const w = window.open("", "_blank", "noopener,noreferrer,width=700,height=800");
+    if (!w) return;
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    return;
+  }
+
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  // Same-origin content without fetching external doc
+  iframe.srcdoc = html;
+
+  document.body.appendChild(iframe);
+
+  iframe.onload = () => {
+    try {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    } catch {
+      // ignore
+    } finally {
+      // cleanup
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 500);
+    }
+  };
+}
+
+/** Build printable receipt HTML from an order */
+function buildReceiptHtml(order: AppOrder) {
+  const lines: AppProductInOrder[] = (order as any).ProductInOrder || [];
+  const createdAt = new Date((order as any).createdAt || Date.now());
+  const shopName = "My Store";
+  const shopAddress = "Main Road, City";
+  const shopPhone = "0300-0000000";
+
+  const subtotal = lines.reduce(
+    (s, l) => s + Number(l.sellPrice || 0) * Number(l.quantity || 0),
+    0
+  );
+  const discount = Number((order as any).discount || 0);
+  const total = Math.max(0, subtotal - discount);
+  const amountReceived = Number((order as any).amountReceived || 0);
+  const change = Math.max(0, amountReceived - total);
+
+  // Thermal-style simple CSS (fits 80mm printers too)
+  const html = `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Receipt #${order.id ?? ""}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif; margin: 0; padding: 0; }
+  .paper { width: 320px; margin: 0 auto; padding: 12px; }
+  .center { text-align: center; }
+  .title { font-size: 16px; font-weight: 700; }
+  .muted { color: #555; font-size: 12px; }
+  .hr { border-top: 1px dashed #999; margin: 8px 0; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { font-size: 12px; padding: 2px 0; }
+  th { text-align: left; color: #444; }
+  .tr { text-align: right; }
+  .totals td { padding: 2px 0; }
+  .bold { font-weight: 700; }
+  .footer { margin-top: 10px; font-size: 11px; }
+</style>
+</head>
+<body>
+  <div class="paper">
+    <div class="center">
+      <div class="title">${shopName}</div>
+      <div class="muted">${shopAddress}</div>
+      <div class="muted">Phone: ${shopPhone}</div>
+    </div>
+
+    <div class="hr"></div>
+    <div style="font-size:12px;">
+      <div><span class="bold">Receipt #:</span> ${order.id ?? "-"}</div>
+      <div><span class="bold">Date:</span> ${createdAt.toLocaleString()}</div>
+    </div>
+    <div class="hr"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:50%;">Item</th>
+          <th class="tr" style="width:15%;">Qty</th>
+          <th class="tr" style="width:15%;">Rate</th>
+          <th class="tr" style="width:20%;">Amt</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${lines
+          .map((l) => {
+            const name = (l as any)?.product?.name ?? "";
+            const qty = Number(l.quantity || 0);
+            const rate = Number(l.sellPrice || 0);
+            const amt = qty * rate;
+            return `<tr>
+              <td>${name}</td>
+              <td class="tr">${qty}</td>
+              <td class="tr">${rate.toFixed(2)}</td>
+              <td class="tr">${amt.toFixed(2)}</td>
+            </tr>`;
+          })
+          .join("")}
+      </tbody>
+    </table>
+
+    <div class="hr"></div>
+    <table class="totals">
+      <tr><td>Subtotal</td><td class="tr">${subtotal.toFixed(2)}</td></tr>
+      <tr><td>Discount</td><td class="tr">-${discount.toFixed(2)}</td></tr>
+      <tr><td class="bold">Total</td><td class="tr bold">${total.toFixed(2)}</td></tr>
+      <tr><td>Amount Received</td><td class="tr">${amountReceived.toFixed(2)}</td></tr>
+      <tr><td>Change</td><td class="tr">${change.toFixed(2)}</td></tr>
+    </table>
+
+    <div class="hr"></div>
+    <div class="center footer">
+      Thanks for shopping with us!
+    </div>
+  </div>
+</body>
+</html>`;
+  return html;
+}
+
 const Order: React.FC = () => {
   const dispatch = useDispatch<any>();
 
@@ -32,6 +176,19 @@ const Order: React.FC = () => {
   const [amountReceived, setAmountReceived] = useState<number | "">("");
   const [submitting, setSubmitting] = useState(false);
   const [description, setDescription] = useState<string>("");
+
+  const [autoPrint, setAutoPrint] = useState<boolean>(true);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("pos:autoPrint");
+    if (saved !== null) {
+      setAutoPrint(saved === "1");
+    }
+  }, []);
+  const handleToggleAutoPrint = (v: boolean) => {
+    setAutoPrint(v);
+    localStorage.setItem("pos:autoPrint", v ? "1" : "0");
+  };
 
   const cardBg = "white";
   const borderCol = "gray.200";
@@ -172,8 +329,20 @@ const Order: React.FC = () => {
 
     try {
       setSubmitting(true);
-      await dispatch(addOrder(payload)).unwrap();
+      const created: { data: AppOrder } = await dispatch(addOrder(payload)).unwrap();
+
       toaster.create({ type: "success", title: "Order created", closable: true });
+
+      // Toggle behavior:
+      // - If autoPrint = true: print via hidden iframe
+      // - If you want to preview instead of print while testing, flip PREVIEW_RECEIPT to true.
+      const PREVIEW_RECEIPT = false; // set to true for testing without showing print dialog
+      if (autoPrint && created?.data) {
+        const html = buildReceiptHtml(created.data);
+        printReceipt(html, { preview: PREVIEW_RECEIPT });
+      }
+
+      // reset form/cart
       setCart([]);
       setDiscountValue("");
       setAmountReceived("");
@@ -204,16 +373,34 @@ const Order: React.FC = () => {
     <Flex p={{ base: 4, lg: 6 }} gap={{ base: 4, lg: 6 }} direction={{ base: "column", lg: "row" }} h="full">
       {/* Left: Product search */}
       <Box flex="1">
-        <Heading size="lg" mb={1}>Order</Heading>
-        <Text color="gray.500" mb={4}>Search and add products to the cart</Text>
+        <Flex align="center" justify="space-between">
+          <Box>
+            <Heading size="lg" mb={1}>Order</Heading>
+            <Text color="gray.500" mb={4}>Search and add products to the cart</Text>
+          </Box>
 
-        <Box bg={cardBg} border="1px solid" borderColor={borderCol} rounded="xl" p={4}>
+          {/* Top-right Auto Print toggle */}
+          <HStack align="center">
+            <Switch.Root
+              checked={autoPrint}
+              onCheckedChange={(details) => handleToggleAutoPrint(details.checked)}
+              colorScheme="blue"
+              size="md"
+            >
+              <Switch.HiddenInput />
+              <Switch.Control />
+              <Switch.Label>Auto print receipt</Switch.Label>
+            </Switch.Root>
+          </HStack>
+        </Flex>
+
+        <Box bg="white" border="1px solid" borderColor="gray.200" rounded="xl" p={4}>
           <SearchProduct onAddToCart={addToCart} />
         </Box>
       </Box>
 
       {/* Right: Cart */}
-      <Box w={{ base: "full", lg: "420px" }} bg={cardBg} rounded="xl" shadow="sm" border="1px solid" borderColor={borderCol} p={{ base: 4, lg: 6 }}>
+      <Box w={{ base: "full", lg: "420px" }} bg="white" rounded="xl" shadow="sm" border="1px solid" borderColor="gray.200" p={{ base: 4, lg: 6 }}>
         <HStack mb={6}>
           <Box as={CgShoppingCart} boxSize={5} color="blue.600" />
           <Heading size="md">Cart</Heading>
@@ -224,7 +411,7 @@ const Order: React.FC = () => {
 
         <Stack>
           {cart.map(item => (
-            <Box key={item.product.id} p={3} border="1px solid" borderColor={borderCol} rounded="md" _notFirst={{ mt: 2 }}>
+            <Box key={item.product.id} p={3} border="1px solid" borderColor="gray.200" rounded="md" _notFirst={{ mt: 2 }}>
               <Flex align="center" justify="space-between">
                 <Box>
                   <Text fontWeight="medium">{item.product.name}</Text>
@@ -257,7 +444,7 @@ const Order: React.FC = () => {
 
         {cart.length > 0 && (
           <>
-            <Box my={4} borderTop="1px solid" borderColor={borderCol} />
+            <Box my={4} borderTop="1px solid" borderColor="gray.200" />
             <VStack align="stretch" fontSize="sm">
               <HStack><Text>Sub-Total:</Text><Spacer /><Text>{currency(subtotal)}</Text></HStack>
               <HStack>
@@ -281,7 +468,7 @@ const Order: React.FC = () => {
               }} placeholder="0" /></HStack>
               <HStack mt={2}><Text>Change to Return:</Text><Spacer /><Text fontWeight="medium">{amountReceived !== "" ? currency(changeToReturn) : "-"}</Text></HStack>
               <HStack align="start" mt={2}><Text>Description:</Text><Spacer /><Input placeholder="Enter description" size="sm" value={description} onChange={(e) => setDescription(e.target.value)} /></HStack>
-              <Box mt={2} borderTop="1px solid" borderColor={borderCol} />
+              <Box mt={2} borderTop="1px solid" borderColor="gray.200" />
               <HStack fontSize="lg" fontWeight="bold" pt={1}><Text>Total:</Text><Spacer /><Text>{currency(totalAfterDiscount)}</Text></HStack>
             </VStack>
 
