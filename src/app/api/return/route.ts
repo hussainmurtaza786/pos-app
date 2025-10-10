@@ -14,7 +14,7 @@ import { ReturnOrder } from "@/prisma/customTypes";
 // If missing or invalid, we will compute it from products on the server.
 const AddReturnSchema = yup.object({
   description: yup.string().nullable(),
-  returnAmount: yup.number().nullable(), // NEW
+  returnAmount: yup.number().required(), // NEW
   products: yup
     .array()
     .of(

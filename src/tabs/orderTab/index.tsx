@@ -41,9 +41,6 @@ export default function Order() {
     return (order || []).filter((o: any) => {
       const id = String(o?.id ?? "").toLowerCase();
       const desc = String(o?.description ?? "").toLowerCase();
-      const status = String(o?.status ?? "").toLowerCase();
-      const discount = String(o?.discount ?? "").toLowerCase();
-      const amt = String(o?.amountReceived ?? "").toLowerCase();
       const productNames = (o?.ProductInOrder || [])
         .map((po: any) => po?.product?.name || "")
         .join(" ")
@@ -52,9 +49,6 @@ export default function Order() {
       return (
         id.includes(q) ||
         desc.includes(q) ||
-        status.includes(q) ||
-        discount.includes(q) ||
-        amt.includes(q) ||
         productNames.includes(q)
       );
     });
@@ -74,7 +68,7 @@ export default function Order() {
 
       {/* Orders Search + Refresh */}
       <Flex align="center" gap={3} mb={3}>
-        <Input border="2px solid" px={4} placeholder="Search Orders" value={search} onChange={(e) => setSearch(e.target.value)} borderColor="gray.300" bg="white" />
+        <Input border="2px solid" px={4} placeholder="Search With Id, Description..." value={search} onChange={(e) => setSearch(e.target.value)} borderColor="gray.300" bg="white" />
         {isFetchingOrder ? (
           <InlineSpinner />
         ) : (

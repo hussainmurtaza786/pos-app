@@ -1,18 +1,17 @@
 'use client';
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Box, Flex, Stack, Heading, Text, Input, Badge, IconButton,
-  Button, HStack, VStack, Spacer,
+  Button, HStack, VStack, Spacer
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { BiMinus, BiPlus, BiX } from "react-icons/bi";
 import { CgShoppingCart } from "react-icons/cg";
 import SearchProduct from "./common/SearchProduct";
-
-// If you have Prisma types:
 import type { Product as PrismaProduct } from "@prisma/client";
 import { useAppDispatch } from "@/redux/store";
 import { addReturn } from "@/redux/slices/app/returnApiThunk";
+
 type Product = PrismaProduct;
 
 interface CartItem {
@@ -30,8 +29,9 @@ export default function ReturnPage() {
   const [submitting, setSubmitting] = useState(false);
   const [reason, setReason] = useState<string>("");
 
-  // NEW: cashier cash given to customer
-  const [cashReturned, setCashReturned] = useState<number | "">("");
+  // REQUIRED: user must enter this; we do not auto-fill it
+  const [cashReturned, setCashReturned] = useState<string>("");
+  const [cashError, setCashError] = useState<string>("");
 
   const borderCol = "gray.200";
 
@@ -63,7 +63,7 @@ export default function ReturnPage() {
 
   const updateSellPrice = (productId: string, value: string) => {
     const num = Number(value);
-    if (Number.isNaN(num)) return;
+    if (value === "" || Number.isNaN(num)) return;
     setCart(curr =>
       curr.map(i => (i.product.id === productId ? { ...i, sellPrice: Math.max(0, num) } : i))
     );
@@ -73,17 +73,32 @@ export default function ReturnPage() {
     setCart(curr => curr.filter(i => i.product.id !== productId));
 
   const subtotal = useMemo(
-    () => cart.reduce((t, i) => t + i.sellPrice * i.quantity, 0),
+    () => cart.reduce((t, i) => t + (i.sellPrice || 0) * i.quantity, 0),
     [cart]
   );
 
-  // Keep cashReturned in sync with subtotal when user hasn't typed anything yet.
-  // If they edit it, we keep their manual value.
-  useEffect(() => {
-    if (cashReturned === "" || cashReturned === undefined || cashReturned === null) {
-      setCashReturned(Number(subtotal.toFixed(2)));
+  // ---- Validation ----
+  const validateCash = (): boolean => {
+    if (cashReturned.trim() === "") {
+      setCashError("Cash returned is required.");
+      return false;
     }
-  }, [subtotal]); // eslint-disable-line react-hooks/exhaustive-deps
+    const n = Number(cashReturned);
+    if (Number.isNaN(n)) {
+      setCashError("Enter a valid number.");
+      return false;
+    }
+    if (n < 0) {
+      setCashError("Cash cannot be negative.");
+      return false;
+    }
+    if (n > subtotal) {
+      setCashError("Cash returned cannot exceed total refund amount.");
+      return false;
+    }
+    setCashError("");
+    return true;
+  };
 
   // ---- Save Return (redux thunk -> API) ----
   const handleSubmit = async () => {
@@ -92,10 +107,11 @@ export default function ReturnPage() {
       return;
     }
 
-    const finalCash =
-      cashReturned === "" || Number.isNaN(Number(cashReturned))
-        ? Number(subtotal.toFixed(2))
-        : Number(cashReturned);
+    const okCash = validateCash();
+    if (!okCash) {
+      toaster.create({ type: "warning", title: "Please fix the Cash Returned field.", closable: true });
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -103,24 +119,22 @@ export default function ReturnPage() {
       await dispatch(
         addReturn({
           description: reason,
-          returnAmount: finalCash, // <- send to API
+          returnAmount: Number(cashReturned), // <-- REQUIRED TOP-LEVEL FIELD
           products: cart.map(i => ({
             productId: i.product.id,
             quantity: i.quantity,
             sellPrice: i.sellPrice,
           })),
-        } as any) // If your ReturnPutInput type already includes returnAmount, you can remove "as any"
+        } as any)
       ).unwrap();
 
-      toaster.create({
-        type: "success",
-        title: "Return saved",
-        closable: true,
-      });
+      toaster.create({ type: "success", title: "Return saved", closable: true });
 
+      // Reset
       setCart([]);
       setReason("");
       setCashReturned("");
+      setCashError("");
     } catch (err: any) {
       toaster.create({
         type: "error",
@@ -148,7 +162,7 @@ export default function ReturnPage() {
 
       {/* Right: Cart */}
       <Box
-        w={{ base: "full", lg: "480px" }}
+        w={{ base: "full", lg: "520px" }}
         bg="white"
         rounded="xl"
         shadow="sm"
@@ -167,21 +181,30 @@ export default function ReturnPage() {
         <Stack>
           {cart.map(item => (
             <Box key={item.product.id} p={3} border="1px solid" borderColor={borderCol} rounded="md" _notFirst={{ mt: 2 }}>
-              <Flex align="center" justify="space-between">
+              <Flex align="center" justify="space-between" gap={3}>
                 <Text fontWeight="medium">{item.product.name}</Text>
                 <HStack>
-                  <IconButton size="sm" variant="ghost" aria-label="Decrease" onClick={() => updateCartQuantity(item.product.id, -1)}>
-                    <BiMinus size={18} />
-                  </IconButton>
+                  <IconButton
+                    size="sm"
+                    variant="ghost"
+                    aria-label="Decrease quantity"
+                    onClick={() => updateCartQuantity(item.product.id, -1)}
+                  ><BiMinus size={18} /></IconButton>
                   <Text fontWeight="semibold" fontSize="lg" w="6" textAlign="center">
                     {item.quantity}
                   </Text>
-                  <IconButton size="sm" variant="ghost" aria-label="Increase" onClick={() => updateCartQuantity(item.product.id, 1)}>
-                    <BiPlus size={18} />
-                  </IconButton>
-                  <IconButton size="sm" variant="ghost" aria-label="Remove" onClick={() => removeFromCart(item.product.id)}>
-                    <BiX color="red" size={18} />
-                  </IconButton>
+                  <IconButton
+                    size="sm"
+                    variant="ghost"
+                    aria-label="Increase quantity"
+                    onClick={() => updateCartQuantity(item.product.id, 1)}
+                  ><BiPlus size={18} /></IconButton>
+                  <IconButton
+                    size="sm"
+                    variant="ghost"
+                    aria-label="Remove item"
+                    onClick={() => removeFromCart(item.product.id)}
+                  ><BiX size={18} color="red" /></IconButton>
                 </HStack>
               </Flex>
 
@@ -191,10 +214,11 @@ export default function ReturnPage() {
                 <Input
                   type="number"
                   size="sm"
-                  w="28"
+                  w="32"
                   textAlign="right"
                   value={item.sellPrice}
                   onChange={(e) => updateSellPrice(item.product.id, e.target.value)}
+                  min={0}
                 />
               </HStack>
             </Box>
@@ -204,53 +228,49 @@ export default function ReturnPage() {
         {cart.length > 0 && (
           <>
             <Box my={4} borderTop="1px solid" borderColor={borderCol} />
-            <VStack align="stretch" fontSize="sm">
+            <VStack align="stretch" fontSize="sm" gap={3}>
               <HStack>
-                <Text>Refund Sub-Total:</Text>
+                <Text>Refund Sub-Total</Text>
                 <Spacer />
                 <Text>{currency(subtotal)}</Text>
               </HStack>
 
-              {/* Reason */}
-              <HStack align="start">
-                <Text>Reason:</Text>
-                <Spacer />
+              <VStack align="stretch" gap={1}>
+                <Text fontSize="sm" color="gray.700">Reason / Notes</Text>
                 <Input
                   placeholder="Return reason / notes"
                   size="sm"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                 />
-              </HStack>
+              </VStack>
 
-              {/* NEW: Cash Returned input */}
-              <HStack align="start">
-                <Text>Cash Returned:</Text>
-                <Spacer />
+              <VStack align="stretch" gap={1}>
+                <Text fontSize="sm" color="gray.700">Cash Returned *</Text>
                 <Input
                   type="number"
                   size="sm"
-                  w="36"
                   textAlign="right"
-                  value={cashReturned === "" ? "" : cashReturned}
+                  value={cashReturned}
                   onChange={(e) => {
-                    const v = e.target.value;
-                    if (v === "") return setCashReturned("");
-                    const n = Number(v);
-                    setCashReturned(Number.isNaN(n) ? "" : n);
+                    setCashReturned(e.target.value);
+                    if (cashError) setCashError("");
                   }}
-                  placeholder={subtotal.toFixed(2)}
+                  onBlur={validateCash}
+                  placeholder="Enter cash given back to customer"
+                  min={0}
                 />
-              </HStack>
+                {cashError && <Text fontSize="xs" color="red.500">{cashError}</Text>}
+              </VStack>
 
               <Box borderTop="1px solid" borderColor={borderCol} />
               <HStack fontSize="lg" fontWeight="bold" pt={1}>
-                <Text>Total Refund (Cash):</Text>
+                <Text>Total Refund (Cash)</Text>
                 <Spacer />
                 <Text>
                   {currency(
-                    cashReturned === "" || Number.isNaN(Number(cashReturned))
-                      ? subtotal
+                    cashReturned.trim() === "" || Number.isNaN(Number(cashReturned))
+                      ? 0
                       : Number(cashReturned)
                   )}
                 </Text>
@@ -260,6 +280,7 @@ export default function ReturnPage() {
             <VStack mt={4}>
               <Button
                 bgColor="gray"
+                variant="solid"
                 w="full"
                 onClick={handleSubmit}
                 loading={submitting}
