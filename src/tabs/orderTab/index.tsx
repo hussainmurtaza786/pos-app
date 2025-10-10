@@ -7,42 +7,15 @@ import { AddUpdateOrderForm, ViewOrder, StatusBadge, ViewReturn, ReturnRow } fro
 import { getOrders } from "@/redux/slices/app/orderApiThunk";
 import { IoMdRefresh } from "react-icons/io";
 import ReturnTable from "./ReturnTab";
+import { InlineSpinner } from "@/components/CustomFunctions";
 
-/** ------------- Dummy Return History data ------------- */
-const DUMMY_RETURNS: ReturnRow[] = [
-  {
-    id: 101,
-    createdAt: new Date().toISOString(),
-    description: "Customer changed mind",
-    products: [
-      { name: "Demo Product A", quantity: 1, sellPrice: 500 },
-      { name: "Demo Product C", quantity: 2, sellPrice: 750 },
-    ],
-  },
-  {
-    id: 102,
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    description: "Damaged packaging",
-    products: [{ name: "Demo Product B", quantity: 1, sellPrice: 1200 }],
-  },
-  {
-    id: 103,
-    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-    description: "Wrong size",
-    products: [{ name: "Demo Product A", quantity: 3, sellPrice: 500 }],
-  },
-];
 
 export default function Order() {
+  const dispatch = useAppDispatch();
   const { count, input, items: order } = useAppSelector(s => s.app.order);
   const isFetchingOrder = useAppSelector(s => s.app.fetchingStatus.getOrders);
-  const dispatch = useAppDispatch();
-
-  // Search for Orders
   const [search, setSearch] = useState("");
 
-  // Search for Returns (by product names / reason / id)
-  const [returnSearch, setReturnSearch] = useState("");
 
   // Pagination for Orders
   const handlePaginationChange = useCallback(async (pageNumber: number, pageSize: number) => {
@@ -87,16 +60,7 @@ export default function Order() {
     });
   }, [order, search]);
 
-  /** ---------- Returns derived helpers (dummy data) ---------- */
-  const filteredReturns = useMemo(() => {
-    const q = (returnSearch || "").toLowerCase();
-    if (!q) return DUMMY_RETURNS;
-    return DUMMY_RETURNS.filter(r =>
-      r.products.some(p => (p.name || "").toLowerCase().includes(q))
-      || (r.description || "").toLowerCase().includes(q)
-      || String(r.id).includes(q)
-    );
-  }, [returnSearch]);
+
 
   return (
     <Box px={5} py={3}>
@@ -110,23 +74,11 @@ export default function Order() {
 
       {/* Orders Search + Refresh */}
       <Flex align="center" gap={3} mb={3}>
-        <Input
-          border="2px solid"
-          px={4}
-          placeholder="Search Orders"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          borderColor="gray.300"
-          bg="white"
-        />
+        <Input border="2px solid" px={4} placeholder="Search Orders" value={search} onChange={(e) => setSearch(e.target.value)} borderColor="gray.300" bg="white" />
         {isFetchingOrder ? (
-          <Spinner size="sm" />
+          <InlineSpinner />
         ) : (
-          <IconButton
-            aria-label="refresh-orders"
-            variant="subtle"
-            onClick={handleRefresh}
-          >
+          <IconButton aria-label="refresh-orders" variant="subtle" onClick={handleRefresh}>
             <IoMdRefresh />
           </IconButton>
         )}
@@ -140,8 +92,6 @@ export default function Order() {
           columns={[
             { accessKey: "id", label: "Id", align: "left", format: val => <ViewOrder orderId={val} /> },
             { accessKey: "amountReceived", label: "Amt Rtn", align: "left" },
-
-            // Amount Returned derived from ProductInOrder
             {
               accessKey: "ProductInOrder", label: "Amt Recv", align: "left", format: (val, rowValues) => {
                 const lineTotal = (val || []).reduce(
@@ -152,11 +102,7 @@ export default function Order() {
                 return amountReceived - lineTotal;
               }
             },
-
-            // discount
             { accessKey: "discount", label: "Discount", align: "left" },
-
-            // Total derived from ProductInOrder minus discount
             {
               accessKey: "ProductInOrder", label: "Total", align: "left",
               format: (val, rowValues) => {
@@ -168,8 +114,6 @@ export default function Order() {
                 return lineTotal - discount;
               }
             },
-
-            // Status with badge
             { accessKey: "status", label: "Status", align: "left", format: (val, row) => <StatusBadge status={row.status || ""} /> },
             {
               accessKey: "id",
@@ -182,19 +126,10 @@ export default function Order() {
                   ) : (
                     <Text fontSize="sm" color="gray.500">Can't Update</Text>
                   )}
-                  {/* <DeleteOrderHandlerButton orderId={val} /> */}
                 </Flex>
               )
             }
 
-            // {
-            //   accessKey: "id", label: "Action", align: "left", format: (val, rowValues) => (
-            //     <Flex gap={4} align='center'>
-            //       <AddUpdateOrderForm initialValues={rowValues} type="Update" />
-            //       {/* <DeleteOrderHandlerButton orderId={val} /> */}
-            //     </Flex>
-            //   )
-            // },
           ]}
           dataFetchingAsync
           loading={isFetchingOrder}

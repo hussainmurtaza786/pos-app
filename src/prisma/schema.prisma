@@ -111,7 +111,7 @@ model ProductInOrder {
 model ReturnOrder {
   id           Int       @id @default(autoincrement())
   description  String?
-  returnAmount Int?
+  returnAmount Float?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime? @updatedAt
 

@@ -74,7 +74,7 @@ interface AdminAppState {
     getProducts: boolean;
     getProductInOrders: boolean;
     getOrders: boolean;
-    getReturn: boolean
+    getReturns: boolean
     getExpenses: boolean
   };
   error: {};
@@ -131,7 +131,7 @@ const initialState: AdminAppState = {
     getProducts: false,
     getProductInOrders: false,
     getOrders: false,
-    getReturn: false,
+    getReturns: false,
     getExpenses: false
   },
   error: {},
@@ -317,7 +317,7 @@ const adminAppSlice = createSlice({
     // RETURNS
     // ============================
     builder.addCase(getReturns.fulfilled, (state, { payload, meta: { arg } }) => {
-      state.fetchingStatus.getReturn = false;
+      state.fetchingStatus.getReturns = false;
       state.return.items = payload.items;
       state.return.count = payload.count;
       state.return.input = { ...state.return.input, ...arg };
