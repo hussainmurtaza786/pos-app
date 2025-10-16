@@ -95,7 +95,7 @@ const filteredRows = useMemo(() => {
             { accessKey: "name", label: "Name", align: "left" },
             {
               accessKey: "price",
-              label: "Price",
+              label: "Selling Price",
               align: "left",
               format: money => (money > 0 ? <Box color="green">Rs.{money}</Box> : "")
             },

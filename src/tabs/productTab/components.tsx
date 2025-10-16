@@ -186,7 +186,7 @@ export function AddUpdateProductForm({ initialValues, type = "Add" }: AddUpdateF
                                     { type: "text", name: "name", label: "Name", fieldArea: 12, notRequired: true },
                                     { type: "text", name: "sku", label: "Sku", fieldArea: 12, notRequired: true },
                                     // category handled above
-                                    { type: "number", name: "price", label: "Price", fieldArea: 12, notRequired: true },
+                                    { type: "number", name: "price", label: "Selling Price", fieldArea: 12, notRequired: true },
                                     { type: "text", name: "description", label: "description", fieldArea: 12, notRequired: true },
                                     { type: "submit", name: "submit-btn", label: `${type} Product`, fieldArea: 12, inputProps: { size: "sm" } },
                                 ]}
@@ -297,7 +297,7 @@ export function ViewProduct({ productId }: { productId: string }) {
                                 <Box>
                                     <Text>Name: {_product.name}</Text>
                                     <Text>SKU: {_product.sku}</Text>
-                                    <Text>Price: {_product.price}</Text>
+                                    <Text>Selling Price: {_product.price}</Text>
                                     <Text>Description: {_product.description}</Text>
 
                                 </Box>

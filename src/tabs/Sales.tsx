@@ -133,19 +133,19 @@ function buildReceiptHtml(order: AppOrder) {
       </thead>
       <tbody>
         ${lines
-          .map((l) => {
-            const name = (l as any)?.product?.name ?? "";
-            const qty = Number(l.quantity || 0);
-            const rate = Number(l.sellPrice || 0);
-            const amt = qty * rate;
-            return `<tr>
+      .map((l) => {
+        const name = (l as any)?.product?.name ?? "";
+        const qty = Number(l.quantity || 0);
+        const rate = Number(l.sellPrice || 0);
+        const amt = qty * rate;
+        return `<tr>
               <td>${name}</td>
               <td class="tr">${qty}</td>
               <td class="tr">${rate.toFixed(2)}</td>
               <td class="tr">${amt.toFixed(2)}</td>
             </tr>`;
-          })
-          .join("")}
+      })
+      .join("")}
       </tbody>
     </table>
 
@@ -172,8 +172,8 @@ const Order: React.FC = () => {
   const dispatch = useDispatch<any>();
 
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [discountValue, setDiscountValue] = useState<number | "">("");
-  const [amountReceived, setAmountReceived] = useState<number | "">("");
+  const [discountValue, setDiscountValue] = useState<number>();
+  const [amountReceived, setAmountReceived] = useState<number>();
   const [submitting, setSubmitting] = useState(false);
   const [description, setDescription] = useState<string>("");
 
@@ -296,17 +296,20 @@ const Order: React.FC = () => {
   const removeFromCart = (productId: string) =>
     setCart(curr => curr.filter(i => i.product.id !== productId));
 
+  if (discountValue === undefined) setDiscountValue(0);
+
   const subtotal = useMemo(() => cart.reduce((t, i) => t + i.sellPrice * i.quantity, 0), [cart]);
-  const discountNumeric = discountValue === "" ? 0 : Math.max(0, Math.min(subtotal, discountValue));
+  const discountNumeric = discountValue === 0 ? 0 : Math.max(0, Math.min(subtotal, discountValue ? discountValue : 0));
   const totalAfterDiscount = Math.max(0, subtotal - discountNumeric);
-  const changeToReturn = amountReceived === "" ? 0 : Math.max(0, Number(amountReceived) - totalAfterDiscount);
+  const changeToReturn = amountReceived === 0 ? 0 : Math.max(0, Number(amountReceived) - totalAfterDiscount);
+
 
   const handleSubmit = async (status: Status) => {
     if (cart.length === 0) {
       toaster.create({ type: "warning", title: "Cart is empty", closable: true });
       return;
     }
-    if (amountReceived === "" || isNaN(Number(amountReceived))) {
+    if (amountReceived === 0 || isNaN(Number(amountReceived))) {
       toaster.create({ type: "warning", title: "Enter amount received", closable: true });
       return;
     }
@@ -314,7 +317,15 @@ const Order: React.FC = () => {
       toaster.create({ type: "error", title: "Amount received must cover total", closable: true });
       return;
     }
-
+    if (discountValue ? discountValue > subtotal : false) {
+      toaster.create({
+        type: "warning",
+        title: "Discount too high",
+        description: "The discount cannot exceed the subtotal.",
+        closable: true,
+      });
+      return;
+    }
     const payload: OrderPutInput = {
       description,
       discount: discountNumeric,
@@ -344,8 +355,8 @@ const Order: React.FC = () => {
 
       // reset form/cart
       setCart([]);
-      setDiscountValue("");
-      setAmountReceived("");
+      setDiscountValue(0);
+      setAmountReceived(0);
       setDescription("");
     } catch (err: any) {
       const msg = err?.message || "";
@@ -452,21 +463,21 @@ const Order: React.FC = () => {
                 <Input
                   min={0}
                   type="number" size="sm" w="28" textAlign="right"
-                  value={discountValue === "" ? "" : discountValue}
+                  value={discountValue === 0 ? 0 : discountValue}
                   onChange={(e) => {
                     const v = e.target.value;
-                    if (v === "") return setDiscountValue("");
+                    if (v === "") return setDiscountValue(0);
                     const n = Number(v);
-                    setDiscountValue(Number.isNaN(n) ? "" : n);
+                    setDiscountValue(Number.isNaN(n) ? 0 : n);
                   }}
                   placeholder="0"
                 />
               </HStack>
-              <HStack mt={2}><Text>Amount Received:</Text><Spacer /><Input min={0} type="number" size="sm" w="28" textAlign="right" value={amountReceived === "" ? "" : amountReceived} onChange={(e) => {
-                const v = e.target.value; if (v === "") return setAmountReceived("");
-                const n = Number(v); setAmountReceived(Number.isNaN(n) ? "" : n);
+              <HStack mt={2}><Text>Amount Received:</Text><Spacer /><Input min={0} type="number" size="sm" w="28" textAlign="right" value={amountReceived === 0 ? 0 : amountReceived} onChange={(e) => {
+                const v = e.target.value; if (v === "") return setAmountReceived(0);
+                const n = Number(v); setAmountReceived(Number.isNaN(n) ? 0 : n);
               }} placeholder="0" /></HStack>
-              <HStack mt={2}><Text>Change to Return:</Text><Spacer /><Text fontWeight="medium">{amountReceived !== "" ? currency(changeToReturn) : "-"}</Text></HStack>
+              <HStack mt={2}><Text>Change to Return:</Text><Spacer /><Text fontWeight="medium">{amountReceived !== 0 ? currency(changeToReturn) : "-"}</Text></HStack>
               <HStack align="start" mt={2}><Text>Description:</Text><Spacer /><Input placeholder="Enter description" size="sm" value={description} onChange={(e) => setDescription(e.target.value)} /></HStack>
               <Box mt={2} borderTop="1px solid" borderColor="gray.200" />
               <HStack fontSize="lg" fontWeight="bold" pt={1}><Text>Total:</Text><Spacer /><Text>{currency(totalAfterDiscount)}</Text></HStack>

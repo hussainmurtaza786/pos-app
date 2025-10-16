@@ -1,439 +1,523 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-import { formatCurrency } from '../../helper';
-import { FiFileText } from 'react-icons/fi';
-import { BiDownload, BiTrendingUp } from 'react-icons/bi';
+'use client';
 
-interface ReportData {
-    monthlySales: Array<{ month: string; sales: number; profit: number; returns: number }>;
-    categoryPerformance: Array<{ name: string; value: number }>;
-    dailySales: Array<{ date: string; sales: number; profit: number; returns: number }>;
-    returnSummary: {
-        totalReturns: number;
-        returnRate: number;
-        netSales: number;
-        netProfit: number;
-        returnTransactions: number;
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Box, Heading, Text, Input, Button, HStack, VStack, Flex, IconButton, Spacer, Badge
+} from "@chakra-ui/react";
+import {
+  ResponsiveContainer,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  PieChart, Pie, Cell,
+  BarChart, Bar,
+} from "recharts";
+import { BiRefresh, BiDownload, BiCalendar } from "react-icons/bi";
+
+import { useAppDispatch, useAppSelector } from "@/redux/store";
+import { getOrders } from "@/redux/slices/app/orderApiThunk";
+import { getReturns } from "@/redux/slices/app/returnApiThunk";
+import { getExpenses } from "@/redux/slices/app/expenseApiThunk";
+import { getProductInOrders } from "@/redux/slices/app/productInOrderApiThunk";
+import { formatCurrency } from "../../helper";
+
+type OrderRow = {
+  id: string;
+  createdAt?: string;
+  totalAmount?: number;
+  total?: number;
+  amount?: number;
+  grandTotal?: number;
+};
+
+type ReturnRow = {
+  id: string;
+  createdAt?: string;
+  returnAmount?: number;
+  amount?: number;
+};
+
+type ExpenseRow = {
+  id: string;
+  createdAt?: string;
+  amount: number;
+};
+
+// helpers
+const toISODate = (d: Date) => d.toISOString().slice(0, 10);
+const shortLabel = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const n = (v: any) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+const fmtRs = (v: number) =>
+  `Rs ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const monthKey = (d: string | Date) =>
+  new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short" });
+
+// colors to match your screenshots (purple/pink family)
+const COLORS = ["#8B5CF6", "#EC4899", "#7C3AED", "#A78BFA", "#F472B6", "#9333EA"];
+
+export default function Reports() {
+  const dispatch = useAppDispatch();
+
+  // default last 30 days
+  const today = new Date();
+  const minus30 = new Date();
+  minus30.setDate(today.getDate() - 29);
+
+  const [from, setFrom] = useState(toISODate(minus30));
+  const [to, setTo] = useState(toISODate(today));
+
+  // store
+  const orderItems = useAppSelector((s: any) => s?.app?.order?.items ?? []);
+  const returnItems = useAppSelector((s: any) => s?.app?.return?.items ?? []);
+  const expenseItems = useAppSelector((s: any) => s?.app?.expense?.items ?? []);
+  const pioItems = useAppSelector((s: any) => s?.app?.productInOrder?.items ?? []);
+
+  const loadingOrders = useAppSelector((s: any) => s?.app?.fetchingStatus?.getOrders ?? false);
+  const loadingReturns = useAppSelector((s: any) => s?.app?.fetchingStatus?.getReturns ?? false);
+  const loadingExpenses = useAppSelector((s: any) => s?.app?.fetchingStatus?.getExpenses ?? false);
+  const loadingPIO = useAppSelector((s: any) => s?.app?.fetchingStatus?.getProductInOrders ?? false);
+  const loading = loadingOrders || loadingReturns || loadingExpenses || loadingPIO;
+
+  // initial load
+  useEffect(() => {
+    dispatch(getOrders({ pageNumber: 1, pageSize: 1000 } as any));
+    dispatch(getReturns({ pageNumber: 1, pageSize: 1000 } as any));
+    dispatch(getExpenses({ pageNumber: 1, pageSize: 1000 } as any));
+    dispatch(getProductInOrders({ pageNumber: 1, pageSize: 2000 } as any));
+  }, [dispatch]);
+
+  // normalize to local shapes
+  const orders: OrderRow[] = useMemo(
+    () =>
+      (orderItems as any[]).map((o) => ({
+        id: o.id,
+        createdAt: o.createdAt ?? null,
+        totalAmount: n(o.totalAmount),
+        total: n(o.total),
+        amount: n(o.amount),
+        grandTotal: n(o.grandTotal),
+      })),
+    [orderItems]
+  );
+
+  const returns: ReturnRow[] = useMemo(
+    () =>
+      (returnItems as any[]).map((r) => ({
+        id: r.id,
+        createdAt: r.createdAt ?? null,
+        returnAmount: n(r.returnAmount),
+        amount: n(r.amount),
+      })),
+    [returnItems]
+  );
+
+  const expenses: ExpenseRow[] = useMemo(
+    () =>
+      (expenseItems as any[]).map((e) => ({
+        id: e.id,
+        createdAt: e.createdAt ?? null,
+        amount: n(e.amount),
+      })),
+    [expenseItems]
+  );
+
+  // map: orderId -> createdAt (for filtering PIO by order date)
+  const orderDateById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const o of orderItems as any[]) {
+      if (o?.id && o?.createdAt) m.set(o.id, o.createdAt);
+    }
+    return m;
+  }, [orderItems]);
+
+  // date range filter (inclusive)
+  const fromDate = useMemo(() => new Date(`${from}T00:00:00`), [from]);
+  const toDate = useMemo(() => new Date(`${to}T23:59:59.999`), [to]);
+
+  const inRange = (iso?: string) => {
+    if (!iso) return false;
+    const d = new Date(iso);
+    return d >= fromDate && d <= toDate;
+  };
+
+  const ordersInRange = useMemo(() => orders.filter(o => inRange(o.createdAt)), [orders, from, to]);
+  const returnsInRange = useMemo(() => returns.filter(r => inRange(r.createdAt)), [returns, from, to]);
+  const expensesInRange = useMemo(() => expenses.filter(e => inRange(e.createdAt)), [expenses, from, to]);
+
+  // totals
+  const grossSales = useMemo(() => {
+    return ordersInRange.reduce((sum, o) => {
+      const val = n(o.totalAmount) || n(o.grandTotal) || n(o.total) || n(o.amount);
+      return sum + val;
+    }, 0);
+  }, [ordersInRange]);
+
+  const totalReturns = useMemo(() => {
+    return returnsInRange.reduce((sum, r) => sum + (n(r.returnAmount) || n(r.amount)), 0);
+  }, [returnsInRange]);
+
+  const totalExpenses = useMemo(() => {
+    return expensesInRange.reduce((sum, e) => sum + n(e.amount), 0);
+  }, [expensesInRange]);
+
+  const netRevenue = useMemo(() => grossSales - totalReturns - totalExpenses, [grossSales, totalReturns, totalExpenses]);
+
+  // Category Performance (donut)
+  // Uses productInOrder rows; expects row.product.category.name, row.quantity, row.sellPrice/price
+  const categoryPerformance = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const row of pioItems as any[]) {
+      const orderId = row?.orderId;
+      const createdAt = orderId ? orderDateById.get(orderId) : null;
+      if (!inRange(createdAt ?? undefined)) continue;
+
+      const qty = n(row?.quantity) || 1;
+      const unit = n(row?.sellPrice) || n(row?.price) || n(row?.unitPrice);
+      const cat = row?.product?.category?.name || "Uncategorized";
+      map.set(cat, (map.get(cat) ?? 0) + qty * unit);
+    }
+    const arr = Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+    arr.sort((a, b) => b.value - a.value);
+    return arr;
+  }, [pioItems, orderDateById, fromDate, toDate]);
+
+  // Sales vs Profit per month (bars)
+  // profit proxy = sales - returns - expenses (per month)
+  const salesVsProfitMonthly = useMemo(() => {
+    const salesByMonth = new Map<string, number>();
+    const returnsByMonth = new Map<string, number>();
+    const expensesByMonth = new Map<string, number>();
+
+    ordersInRange.forEach(o => {
+      const key = monthKey(o.createdAt ?? "");
+      const amt = n(o.totalAmount) || n(o.grandTotal) || n(o.total) || n(o.amount);
+      salesByMonth.set(key, (salesByMonth.get(key) ?? 0) + amt);
+    });
+    returnsInRange.forEach(r => {
+      const key = monthKey(r.createdAt ?? "");
+      const amt = n(r.returnAmount) || n(r.amount);
+      returnsByMonth.set(key, (returnsByMonth.get(key) ?? 0) + amt);
+    });
+    expensesInRange.forEach(e => {
+      const key = monthKey(e.createdAt ?? "");
+      const amt = n(e.amount);
+      expensesByMonth.set(key, (expensesByMonth.get(key) ?? 0) + amt);
+    });
+
+    // continuous month rows between from and to
+    const start = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1);
+    const end = new Date(toDate.getFullYear(), toDate.getMonth(), 1);
+    const rows: { month: string; sales: number; profit: number }[] = [];
+    const cur = new Date(start);
+    while (cur <= end) {
+      const key = monthKey(cur);
+      const s = salesByMonth.get(key) ?? 0;
+      const ret = returnsByMonth.get(key) ?? 0;
+      const exp = expensesByMonth.get(key) ?? 0;
+      rows.push({ month: key, sales: s, profit: s - ret - exp });
+      cur.setMonth(cur.getMonth() + 1);
+    }
+    return rows;
+  }, [ordersInRange, returnsInRange, expensesInRange, fromDate, toDate]);
+
+  // daily trend
+  const chartData = useMemo(() => {
+    const map = new Map<string, { sales: number; returns: number; expenses: number }>();
+
+    const add = (key: string, which: "sales" | "returns" | "expenses", val: number) => {
+      const row = map.get(key) ?? { sales: 0, returns: 0, expenses: 0 };
+      row[which] += val;
+      map.set(key, row);
     };
+
+    ordersInRange.forEach(o => {
+      const key = (o.createdAt ?? "").slice(0, 10);
+      const val = n(o.totalAmount) || n(o.grandTotal) || n(o.total) || n(o.amount);
+      if (key) add(key, "sales", val);
+    });
+
+    returnsInRange.forEach(r => {
+      const key = (r.createdAt ?? "").slice(0, 10);
+      const val = n(r.returnAmount) || n(r.amount);
+      if (key) add(key, "returns", val);
+    });
+
+    expensesInRange.forEach(e => {
+      const key = (e.createdAt ?? "").slice(0, 10);
+      if (key) add(key, "expenses", n(e.amount));
+    });
+
+    // fill full range
+    const arr: { label: string; sales: number; returns: number; expenses: number; net: number }[] = [];
+    const start = new Date(fromDate);
+    const end = new Date(toDate);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const key = toISODate(d);
+      const row = map.get(key) ?? { sales: 0, returns: 0, expenses: 0 };
+      arr.push({
+        label: shortLabel(d),
+        sales: row.sales,
+        returns: row.returns,
+        expenses: row.expenses,
+        net: row.sales - row.returns - row.expenses,
+      });
+    }
+    return arr;
+  }, [ordersInRange, returnsInRange, expensesInRange, fromDate, toDate]);
+
+  // export CSV
+  function exportCSV() {
+    const lines = [
+      "Date,Gross Sales,Returns,Expenses,Net Revenue",
+      ...chartData.map(r =>
+        [
+          r.label,
+          r.sales.toFixed(2),
+          r.returns.toFixed(2),
+          r.expenses.toFixed(2),
+          r.net.toFixed(2),
+        ].join(",")
+      ),
+      "",
+      `TOTAL,,${grossSales.toFixed(2)},${totalReturns.toFixed(2)},${totalExpenses.toFixed(2)},${netRevenue.toFixed(2)}`
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `report_${from}_to_${to}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <Box p={6}>
+      {/* Header + Filters */}
+      <Flex align="center" wrap="wrap" gap={3}>
+        <Heading size="lg" color="gray.800">Reports</Heading>
+        <Spacer />
+        <HStack>
+          <HStack>
+            <BiCalendar />
+            <Input
+              type="date"
+              value={from}
+              max={to}
+              onChange={(e) => setFrom(e.target.value)}
+              height="42px"
+            />
+          </HStack>
+          <HStack>
+            <BiCalendar />
+            <Input
+              type="date"
+              value={to}
+              min={from}
+              onChange={(e) => setTo(e.target.value)}
+              height="42px"
+            />
+          </HStack>
+          <IconButton aria-label="Refresh data" onClick={() => {
+            dispatch(getOrders({ pageNumber: 1, pageSize: 1000 } as any));
+            dispatch(getReturns({ pageNumber: 1, pageSize: 1000 } as any));
+            dispatch(getExpenses({ pageNumber: 1, pageSize: 1000 } as any));
+            dispatch(getProductInOrders({ pageNumber: 1, pageSize: 2000 } as any));
+          }}>
+            <BiRefresh />
+          </IconButton>
+          <Button bgColor="teal" color="white" onClick={exportCSV} disabled={loading}>
+            <BiDownload style={{ marginRight: 6 }} /> CSV
+          </Button>
+        </HStack>
+      </Flex>
+
+      {/* KPI cards */}
+      <Flex mt={5} gap={4} wrap="wrap">
+        <StatCard title="Gross Sales" value={fmtRs(grossSales)} tone="blue" loading={loading} />
+        <StatCard title="Returns" value={fmtRs(totalReturns)} tone="orange" loading={loading} />
+        <StatCard title="Expenses" value={fmtRs(totalExpenses)} tone="red" loading={loading} />
+        <StatCard title="Net Revenue" value={fmtRs(netRevenue)} tone={netRevenue >= 0 ? "green" : "red"} loading={loading} />
+      </Flex>
+
+      {/* Daily Trend */}
+      <Box bg="white" p={4} rounded="xl" shadow="sm" mt={6} border="1px solid" borderColor="gray.200" w="100%" h="360px">
+        <Text fontWeight="semibold" color="gray.800" mb={2}>Daily Trend</Text>
+        <ResponsiveContainer width="100%" height="90%">
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="label" />
+            <YAxis width={80} tickFormatter={(v) => `Rs ${Number(v).toLocaleString()}`} />
+            <Tooltip
+              formatter={(v: any) => (formatCurrency ? formatCurrency(Number(v)) : fmtRs(Number(v)))}
+              labelFormatter={(l: any) => `Date: ${l}`}
+            />
+            <Legend />
+            <Line type="monotone" dataKey="sales" name="Sales" stroke="#7C3AED" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="returns" name="Returns" stroke="#EC4899" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="expenses" name="Expenses" stroke="#8B5CF6" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="net" name="Net" stroke="#10B981" strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </Box>
+
+      {/* Two-up: Category Performance + Sales vs Profit */}
+      <Flex mt={6} gap={4} wrap="wrap">
+        {/* Category Performance (Donut) */}
+        <Box flex="1 1 380px" minW="320px" bg="white" p={4} rounded="xl" shadow="sm" border="1px solid" borderColor="gray.200">
+          <Text fontWeight="semibold" color="gray.800" mb={2}>Category Performance</Text>
+          <Box w="100%" h="280px">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Tooltip formatter={(v: any) => (formatCurrency ? formatCurrency(Number(v)) : fmtRs(Number(v)))} />
+                <Pie
+                  data={categoryPerformance}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={90}
+                  paddingAngle={2}
+                  stroke="transparent"
+                >
+                  {categoryPerformance.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </Box>
+          <HStack mt={3} wrap="wrap" gap={3}>
+            {categoryPerformance.map((c, i) => (
+              <HStack key={c.name}>
+                <Box w="12px" h="12px" rounded="sm" style={{ background: COLORS[i % COLORS.length] }} />
+                <Text fontSize="sm" color="gray.700">{c.name}</Text>
+              </HStack>
+            ))}
+          </HStack>
+        </Box>
+
+        {/* Sales vs Profit (Bars, month-by-month) */}
+        <Box flex="1 1 520px" minW="360px" bg="white" p={4} rounded="xl" shadow="sm" border="1px solid" borderColor="gray.200">
+          <Flex align="center" justify="space-between" mb={2}>
+            <Text fontWeight="semibold" color="gray.800">Sales vs Profit</Text>
+            <Badge colorScheme="gray">range: {from} → {to}</Badge>
+          </Flex>
+          <Box w="100%" h="280px">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={salesVsProfitMonthly}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis width={80} tickFormatter={(v) => `Rs ${Number(v).toLocaleString()}`} />
+                <Tooltip
+                  formatter={(v: any) => (formatCurrency ? formatCurrency(Number(v)) : fmtRs(Number(v)))}
+                  labelFormatter={(l: any) => `Month: ${l}`}
+                />
+                <Legend />
+                <Bar dataKey="sales" name="Sales" fill="#7C3AED" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="profit" name="Profit" fill="#EC4899" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Box>
+        </Box>
+      </Flex>
+
+      {/* Recent items lists (no table, no Divider) */}
+      <Flex mt={6} gap={4} wrap="wrap">
+        <ListCard
+          title="Recent Orders"
+          items={ordersInRange.slice(0, 10).map(o => ({
+            primary: fmtRs(n(o.totalAmount) || n(o.grandTotal) || n(o.total) || n(o.amount)),
+            secondary: o.createdAt?.slice(0, 10) || "",
+          }))}
+          badge="Order"
+          tone="blue"
+        />
+        <ListCard
+          title="Recent Returns"
+          items={returnsInRange.slice(0, 10).map(r => ({
+            primary: fmtRs(n(r.returnAmount) || n(r.amount)),
+            secondary: r.createdAt?.slice(0, 10) || "",
+          }))}
+          badge="Return"
+          tone="orange"
+        />
+        <ListCard
+          title="Recent Expenses"
+          items={expensesInRange.slice(0, 10).map(e => ({
+            primary: fmtRs(n(e.amount)),
+            secondary: e.createdAt?.slice(0, 10) || "",
+          }))}
+          badge="Expense"
+          tone="red"
+        />
+      </Flex>
+    </Box>
+  );
 }
 
-export const Reports: React.FC = () => {
-    const [reportData, setReportData] = useState<ReportData>({
-        monthlySales: [],
-        categoryPerformance: [],
-        dailySales: [],
-        returnSummary: {
-            totalReturns: 0,
-            returnRate: 0,
-            netSales: 0,
-            netProfit: 0,
-            returnTransactions: 0,
-        },
-    });
-    const [timeframe, setTimeframe] = useState('this-month');
-    const [loading, setLoading] = useState(true);
-    const [generating, setGenerating] = useState(false);
+/** Minimal stat card (no FormControl/Table/Divider) */
+function StatCard({
+  title,
+  value,
+  tone = "gray",
+  loading,
+}: {
+  title: string;
+  value: string;
+  tone?: "blue" | "orange" | "red" | "green" | "gray";
+  loading?: boolean;
+}) {
+  const colorMap: Record<string, string> = {
+    blue: "blue.500",
+    orange: "orange.500",
+    red: "red.500",
+    green: "green.600",
+    gray: "gray.600",
+  };
+  return (
+    <Box flex="1 1 240px" bg="white" p={4} rounded="xl" shadow="sm" border="1px solid" borderColor="gray.200">
+      <Text fontSize="sm" color="gray.500">{title}</Text>
+      <HStack mt={2} align="baseline">
+        <Heading size="md" color={colorMap[tone]}>{loading ? "…" : value}</Heading>
+      </HStack>
+    </Box>
+  );
+}
 
-    useEffect(() => {
-        fetchReportData();
-    }, [timeframe]);
-
-    const fetchReportData = async () => {
-        setLoading(true);
-        try {
-            // Supabase logic commented
-            // const { data: { user } } = await supabase.auth.getUser();
-            // if (!user) return;
-
-            // const { data: salesData } = await supabase
-            //   .from('sales')
-            //   .select(`*, sale_items(*, products(*, categories(name)))`)
-            //   .eq('user_id', user.id)
-            //   .eq('status', 'completed');
-
-            // const { data: returnsData } = await supabase
-            //   .from('returns')
-            //   .select('*')
-            //   .eq('user_id', user.id);
-
-            // Replace with Prisma fetch logic...
-
-            // Temporary dummy data for fallback
-            const salesData: any[] = []; // Fetch from Prisma
-            const returnsData: any[] = []; // Fetch from Prisma
-
-            const monthlyMap = new Map();
-            const returnsByMonth = new Map();
-
-            salesData.forEach(sale => {
-                const month = new Date(sale.created_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                });
-
-                if (!monthlyMap.has(month)) monthlyMap.set(month, { sales: 0, profit: 0 });
-
-                const current = monthlyMap.get(month);
-                monthlyMap.set(month, {
-                    sales: current.sales + sale.total_amount,
-                    profit: current.profit + sale.total_profit,
-                });
-            });
-
-            returnsData.forEach(ret => {
-                const month = new Date(ret.created_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                });
-                returnsByMonth.set(month, (returnsByMonth.get(month) || 0) + ret.total_refund);
-            });
-
-            const monthlySales = Array.from(monthlyMap.entries()).map(([month, data]) => ({
-                month,
-                sales: data.sales,
-                profit: data.profit,
-                returns: returnsByMonth.get(month) || 0,
-            }));
-
-            const categoryMap = new Map();
-            salesData.forEach(sale => {
-                sale.sale_items.forEach(item => {
-                    const categoryName = item.products?.categories?.name;
-                    const revenue = item.total_price;
-                    if (categoryName) {
-                        categoryMap.set(categoryName, (categoryMap.get(categoryName) || 0) + revenue);
-                    }
-                });
-            });
-
-            const categoryPerformance = Array.from(categoryMap.entries()).map(([name, value]) => ({ name, value }));
-
-            const dailyMap = new Map();
-            const dailyReturnsMap = new Map();
-            const last30Days = Array.from({ length: 30 }, (_, i) => {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                return date.toISOString().split('T')[0];
-            }).reverse();
-
-            last30Days.forEach(date => {
-                dailyMap.set(date, { sales: 0, profit: 0 });
-                dailyReturnsMap.set(date, 0);
-            });
-
-            salesData.forEach(sale => {
-                const date = sale.created_at.split('T')[0];
-                if (dailyMap.has(date)) {
-                    const current = dailyMap.get(date);
-                    dailyMap.set(date, {
-                        sales: current.sales + sale.total_amount,
-                        profit: current.profit + sale.total_profit,
-                    });
-                }
-            });
-
-            returnsData.forEach(ret => {
-                const date = ret.created_at.split('T')[0];
-                if (dailyReturnsMap.has(date)) {
-                    dailyReturnsMap.set(date, dailyReturnsMap.get(date) + ret.total_refund);
-                }
-            });
-
-            const dailySales = Array.from(dailyMap.entries()).map(([date, data]) => ({
-                date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                sales: data.sales,
-                profit: data.profit,
-                returns: dailyReturnsMap.get(date) || 0,
-            }));
-
-            const totalSales = salesData.reduce((sum, sale) => sum + sale.total_amount, 0);
-            const totalProfit = salesData.reduce((sum, sale) => sum + sale.total_profit, 0);
-            const totalReturns = returnsData.reduce((sum, ret) => sum + ret.total_refund, 0);
-            const returnRate = totalSales > 0 ? (totalReturns / totalSales) * 100 : 0;
-            const totalReturnProfit = returnsData.reduce((sum, ret) => sum + (ret.total_profit || 0), 0);
-
-            setReportData({
-                monthlySales,
-                categoryPerformance,
-                dailySales,
-                returnSummary: {
-                    totalReturns,
-                    returnRate,
-                    netSales: totalSales - totalReturns,
-                    netProfit: totalProfit - totalReturnProfit,
-                    returnTransactions: returnsData.length,
-                },
-            });
-        } catch (error) {
-            console.error('Error fetching report data:', error);
-            // Optional: alert('Failed to fetch report data');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const generatePDF = async () => {
-        setGenerating(true);
-        try {
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            pdf.setFontSize(20);
-            pdf.text('Sales Report', 20, 20);
-            pdf.setFontSize(12);
-            pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 30);
-            const { returnSummary } = reportData;
-            let yPosition = 50;
-            pdf.setFontSize(16);
-            pdf.text('Report Summary (Net of Returns)', 20, yPosition);
-            yPosition += 15;
-            pdf.setFontSize(12);
-            pdf.text(`Net Sales: ${formatCurrency(returnSummary.netSales)}`, 20, yPosition);
-            yPosition += 10;
-            pdf.text(`Net Profit: ${formatCurrency(returnSummary.netProfit)}`, 20, yPosition);
-            yPosition += 10;
-            pdf.text(`Total Returns: ${formatCurrency(returnSummary.totalReturns)}`, 20, yPosition);
-            yPosition += 10;
-            pdf.text(`Return Rate: ${returnSummary.returnRate.toFixed(2)}%`, 20, yPosition);
-            yPosition += 10;
-            pdf.text(`Return Transactions: ${returnSummary.returnTransactions}`, 20, yPosition);
-            const chartsContainer = document.getElementById('charts-container');
-            if (chartsContainer) {
-                const canvas = await html2canvas(chartsContainer, { scale: 1, useCORS: true, allowTaint: true });
-                const imgData = canvas.toDataURL('image/png');
-                const imgWidth = 170;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                yPosition += 20;
-                if (yPosition + imgHeight > 280) {
-                    pdf.addPage();
-                    yPosition = 20;
-                }
-                pdf.addImage(imgData, 'PNG', 20, yPosition, imgWidth, imgHeight);
-            }
-            pdf.save(`sales-report-${new Date().toISOString().split('T')[0]}.pdf`);
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-        } finally {
-            setGenerating(false);
-        }
-    };
-
-    const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#F97316'];
-
-    if (loading) {
-        return (
-            <div className="p-6 flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Sales Reports</h1>
-                    <p className="text-gray-600">Analyze your sales performance and generate reports (net of returns)</p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2 sm:space-x-3 w-full lg:w-auto">
-                    <select
-                        value={timeframe}
-                        onChange={(e) => setTimeframe(e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
-                    >
-                        <option value="this-month">This Month</option>
-                        <option value="last-month">Last Month</option>
-                        <option value="this-year">This Year</option>
-                    </select>
-                    <button
-                        onClick={() => fetchReportData()}
-                        className="flex items-center justify-center px-3 lg:px-4 py-2 bg-blue-600 text-white text-sm lg:text-base rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                        <FiFileText className="h-4 w-4 mr-2" />
-                        Generate Report
-                    </button>
-                    <button
-                        onClick={generatePDF}
-                        disabled={generating}
-                        className="flex items-center justify-center px-3 lg:px-4 py-2 bg-green-600 text-white text-sm lg:text-base rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                        <BiDownload className="h-4 w-4 mr-2" />
-                        {generating ? 'Generating...' : 'Export PDF'}
-                    </button>
-                </div>
-            </div>
-
-            {/* Returns Impact Alert */}
-            {reportData.returnSummary.totalReturns > 0 && (
-                <div className="bg-red-50 border border-red-200 p-4 lg:p-6 rounded-xl">
-                    <div className="flex items-start">
-                        <BiTrendingUp className="h-6 w-6 text-red-600 mt-0.5 mr-3" />
-                        <div className="flex-1">
-                            <h3 className="text-base lg:text-lg font-semibold text-red-800 mb-2">Returns Impact on Reports</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div className="text-center">
-                                    <p className="text-xl lg:text-2xl font-bold text-red-600">
-                                        {formatCurrency(reportData.returnSummary.totalReturns)}
-                                    </p>
-                                    <p className="text-sm text-red-700">Total Returns</p>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-xl lg:text-2xl font-bold text-red-600">
-                                        {reportData.returnSummary.returnRate.toFixed(1)}%
-                                    </p>
-                                    <p className="text-sm text-red-700">Return Rate</p>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-xl lg:text-2xl font-bold text-green-600">
-                                        {formatCurrency(reportData.returnSummary.netSales)}
-                                    </p>
-                                    <p className="text-sm text-red-700">Net Sales</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <div id="charts-container" className="space-y-6">
-                {/* Monthly Sales Trend */}
-                <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-4">Monthly Sales Trend (Net of Returns)</h3>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={reportData.monthlySales}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="month" />
-                            <YAxis tickFormatter={(value) => `Rs ${value.toLocaleString()}`} />
-                            <Tooltip
-                                formatter={(value, name) => [formatCurrency(Number(value)), name]}
-                                labelFormatter={(label) => `Month: ${label}`}
-                            />
-                            <Bar dataKey="sales" name="Net Sales" fill="#3B82F6" />
-                            <Bar dataKey="profit" name="Net Profit" fill="#10B981" />
-                            <Bar dataKey="returns" name="Returns" fill="#EF4444" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Category Performance */}
-                    <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-4">Category Performance (Net of Returns)</h3>
-                        <ResponsiveContainer width="100%" height={250}>
-                            <PieChart>
-                                <Pie
-                                    data={reportData.categoryPerformance}
-                                    cx="50%"
-                                    cy="50%"
-                                    outerRadius={80}
-                                    fill="#8884d8"
-                                    dataKey="value"
-                                    label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                >
-                                    {reportData.categoryPerformance.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                            {reportData.categoryPerformance.map((item, index) => (
-                                <div key={item.name} className="flex items-center text-sm">
-                                    <div
-                                        className="w-3 h-3 rounded mr-2"
-                                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                                    ></div>
-                                    <span>{item.name}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Return Analysis */}
-                    <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-4">Return Analysis</h3>
-                        <div className="space-y-6">
-                            <div className="text-center">
-                                <p className="text-3xl lg:text-4xl font-bold text-red-600">
-                                    {reportData.returnSummary.returnRate.toFixed(1)}%
-                                </p>
-                                <p className="text-gray-600">Overall Return Rate</p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 text-center">
-                                <div>
-                                    <p className="text-xl lg:text-2xl font-bold text-red-600">
-                                        {formatCurrency(reportData.returnSummary.totalReturns)}
-                                    </p>
-                                    <p className="text-sm text-gray-600">Total Returns</p>
-                                </div>
-                                <div>
-                                    <p className="text-xl lg:text-2xl font-bold text-blue-600">
-                                        {reportData.returnSummary.returnTransactions}
-                                    </p>
-                                    <p className="text-sm text-gray-600">Return Transactions</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Daily Sales Revenue */}
-                <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-4">Daily Sales Revenue (Net of Returns)</h3>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <LineChart data={reportData.dailySales}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
-                            <YAxis tickFormatter={(value) => `Rs ${value.toLocaleString()}`} />
-                            <Tooltip
-                                formatter={(value, name) => [formatCurrency(Number(value)), name]}
-                                labelFormatter={(label) => `Date: ${label}`}
-                            />
-                            <Line type="monotone" dataKey="sales" name="Daily Net Sales" stroke="#3B82F6" strokeWidth={2} />
-                            <Line type="monotone" dataKey="profit" name="Daily Net Profit" stroke="#10B981" strokeWidth={2} />
-                            <Line type="monotone" dataKey="returns" name="Daily Returns" stroke="#EF4444" strokeWidth={2} />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* Report Summary */}
-                <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-4">Report Summary (Net of Returns)</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
-                        <div className="text-center">
-                            <p className="text-xl lg:text-2xl font-bold text-blue-600">
-                                {formatCurrency(reportData.returnSummary.netSales)}
-                            </p>
-                            <p className="text-sm text-gray-600">Net Sales</p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-xl lg:text-2xl font-bold text-green-600">
-                                {formatCurrency(reportData.returnSummary.netProfit)}
-                            </p>
-                            <p className="text-sm text-gray-600">Net Profit</p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-xl lg:text-2xl font-bold text-red-600">
-                                {formatCurrency(reportData.returnSummary.totalReturns)}
-                            </p>
-                            <p className="text-sm text-gray-600">Total Returns</p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-xl lg:text-2xl font-bold text-purple-600">
-                                {reportData.monthlySales.filter(m => m.sales > 0).length}
-                            </p>
-                            <p className="text-sm text-gray-600">Days with Sales</p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-xl lg:text-2xl font-bold text-orange-600">
-                                {formatCurrency(reportData.returnSummary.netSales / Math.max(1, reportData.monthlySales.filter(m => m.sales > 0).length))}
-                            </p>
-                            <p className="text-sm text-gray-600">Avg Daily Net Sales</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
+/** Simple list card to show recent items */
+function ListCard({
+  title,
+  items,
+  badge,
+  tone,
+}: {
+  title: string;
+  items: { primary: string; secondary?: string }[];
+  badge: string;
+  tone: "blue" | "orange" | "red";
+}) {
+  const colorMap: Record<string, string> = {
+    blue: "blue",
+    orange: "orange",
+    red: "red",
+  };
+  return (
+    <Box flex="1 1 320px" bg="white" p={4} rounded="xl" shadow="sm" border="1px solid" borderColor="gray.200" minW="280px">
+      <HStack justify="space-between" mb={2}>
+        <Text fontWeight="semibold" color="gray.800">{title}</Text>
+        <Badge colorScheme={colorMap[tone]}>{badge}</Badge>
+      </HStack>
+      <VStack align="stretch" gap={2}>
+        {items.length === 0 ? (
+          <Text color="gray.500">No data.</Text>
+        ) : (
+          items.map((it, idx) => (
+            <Box key={idx} border="1px solid" borderColor="gray.200" rounded="md" p={2}>
+              <Text fontWeight="medium">{it.primary}</Text>
+              {it.secondary ? <Text color="gray.600" fontSize="sm">{it.secondary}</Text> : null}
+            </Box>
+          ))
+        )}
+      </VStack>
+    </Box>
+  );
+}
