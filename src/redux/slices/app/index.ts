@@ -21,7 +21,8 @@ import { handlePending, handleReject } from '@/redux/helper';
 import { addOrder, deleteOrderById, getOrderById, getOrders, updateOrderById } from './orderApiThunk';
 import { ReturnsGetInput } from '@/app/api/return/route';
 import { addReturn, deleteReturnById, getReturnById, getReturns, updateReturnById } from './returnApiThunk';
-import { addExpense, deleteExpenseById, getExpenses, updateExpenseById } from './expenseApiThunk';
+import { addExpense, deleteExpenseById, getExpenseById, getExpenses, updateExpenseById } from './expenseApiThunk';
+import { ExpensesGetInput } from '@/app/api/expenses/route';
 
 // -------------------------
 // State Interface
@@ -57,18 +58,19 @@ interface AdminAppState {
     input: ReturnsGetInput;
     itemFullDataById: { [id: string]: ReturnOrder | undefined };
   };
+  expenses: {
+    items: Expense[] | null;
+    count: number;
+    input: ExpensesGetInput;
+    itemFullDataById: { [id: string]: Expense | undefined };
+  };
   category: {
     items: Category[];
     count: number;
     loading: boolean;
     error: string | null;
   };
-  expense: {
-    items: Expense[];
-    count: number;
-    loading: boolean;
-    error: string | null;
-  };
+
   fetchingStatus: {
     getInventories: boolean;
     getProducts: boolean;
@@ -120,11 +122,11 @@ const initialState: AdminAppState = {
     loading: false,
     error: null,
   },
-  expense: {
-    items: [],
+  expenses: {
+    items: null,
     count: 0,
-    loading: false,
-    error: null,
+    input: { pageNumber: 1, pageSize: 10 },
+    itemFullDataById: {},
   },
   fetchingStatus: {
     getInventories: false,
@@ -349,26 +351,65 @@ const adminAppSlice = createSlice({
     // ============================
     // EXPENSES
     // ============================
-    builder.addCase(getExpenses.fulfilled, (state, { payload }) => {
+    //   builder.addCase(getExpenses.fulfilled, (state, { payload }) => {
+    //     state.fetchingStatus.getExpenses = false;
+    //     state.expense.items = payload.data.items;
+    //     state.expense.count = payload.data.count;
+    //   });
+    //   builder.addCase(getExpenses.pending, handlePending('getExpenses'));
+    //   builder.addCase(getExpenses.rejected, handleReject('getExpenses'));
+
+    //   builder.addCase(addExpense.fulfilled, (state, { payload }) => {
+    //     state.expense.items.unshift(payload.data);
+    //     state.expense.count += 1;
+    //   });
+    //   builder.addCase(deleteExpenseById.fulfilled, (state, { payload }) => {
+    //     state.expense.items = state.expense.items.filter((item) => item.id !== payload.data.id);
+    //     state.expense.count -= 1;
+    //   });
+    //   builder.addCase(updateExpenseById.fulfilled, (state, { payload }) => {
+    //     const index = state.expense.items.findIndex((item) => item.id === payload.data.id);
+    //     if (index > -1) {
+    //       state.expense.items[index] = payload.data;
+    //     }
+    //});
+    // ============================
+    // EXPENSES
+    // ============================
+    builder.addCase(getExpenses.fulfilled, (state, { payload, meta: { arg } }) => {
       state.fetchingStatus.getExpenses = false;
-      state.expense.items = payload.data.items;
-      state.expense.count = payload.data.count;
+      state.expenses.items = payload.data.items;
+      state.expenses.count = payload.data.count;
+      state.expenses.input = { ...state.expenses.input, ...arg };
     });
+
     builder.addCase(getExpenses.pending, handlePending('getExpenses'));
     builder.addCase(getExpenses.rejected, handleReject('getExpenses'));
 
     builder.addCase(addExpense.fulfilled, (state, { payload }) => {
-      state.expense.items.unshift(payload.data);
-      state.expense.count += 1;
+      state.expenses.items?.unshift(payload.data);
+      if (state.expenses.items?.length === state.expenses.input.pageSize) {
+        state.expenses.items?.pop();
+      }
+      state.expenses.itemFullDataById[payload.data.id] = payload.data;
+      state.expenses.count++;
     });
-    builder.addCase(deleteExpenseById.fulfilled, (state, { payload }) => {
-      state.expense.items = state.expense.items.filter((item) => item.id !== payload.data.id);
-      state.expense.count -= 1;
+
+    builder.addCase(deleteExpenseById.fulfilled, (state, { payload, meta: { arg } }) => {
+      state.expenses.items = state.expenses.items?.filter((item) => item.id !== arg) || null;
+      delete state.expenses.itemFullDataById[payload.data.id];
+      state.expenses.count--;
     });
-    builder.addCase(updateExpenseById.fulfilled, (state, { payload }) => {
-      const index = state.expense.items.findIndex((item) => item.id === payload.data.id);
-      if (index > -1) {
-        state.expense.items[index] = payload.data;
+
+    builder.addCase(getExpenseById.fulfilled, (state, { payload }) => {
+      state.expenses.itemFullDataById[payload.data.id] = payload.data;
+    });
+
+    builder.addCase(updateExpenseById.fulfilled, (state, { payload, meta: { arg } }) => {
+      state.expenses.itemFullDataById[arg.id] = payload.data;
+      const index = state.expenses.items?.findIndex((item) => item.id === arg.id);
+      if (typeof index === 'number' && index > -1) {
+        state.expenses.items![index] = payload.data;
       }
     });
 
