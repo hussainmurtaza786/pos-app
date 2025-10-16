@@ -13,7 +13,7 @@ export const getExpenses = createAsyncThunk(
     async (params: ExpensesGetInput, thunkAPI) => {
         try {
             const response = await authorizedApiClient.get<ExpensesGetOutput>(
-                `/api/expense/`,
+                `/api/expenses/`,
                 { params, withCredentials: true }
             );
             return response.data;
@@ -33,7 +33,7 @@ export const addExpense = createAsyncThunk(
     async (body: ExpensePutInput, thunkAPI) => {
         try {
             const response = await authorizedApiClient.put<ExpensePutOutput>(
-                `/api/expense/`,
+                `/api/expenses/`,
                 body,
                 { withCredentials: true }
             );
@@ -54,7 +54,7 @@ export const deleteExpenseById = createAsyncThunk(
     async (expenseId: string, thunkAPI) => {
         try {
             const response = await authorizedApiClient.delete<ExpenseDeleteOutput>(
-                `/api/expense/${expenseId}`,
+                `/api/expenses/${expenseId}`,
                 { withCredentials: true }
             );
             return response.data;
@@ -74,7 +74,7 @@ export const getExpenseById = createAsyncThunk(
     async (expenseId: string, thunkAPI) => {
         try {
             const response = await authorizedApiClient.get<ExpenseGetOutput>(
-                `/api/expense/${expenseId}`,
+                `/api/expenses/${expenseId}`,
                 { withCredentials: true }
             );
             return response.data;
@@ -94,7 +94,7 @@ export const updateExpenseById = createAsyncThunk(
     async (body: ExpensePostInput, thunkAPI) => {
         try {
             const response = await authorizedApiClient.post<ExpensePostOutput>(
-                `/api/expense/${body.id}`,
+                `/api/expenses/${body.id}`,
                 body,
                 { withCredentials: true }
             );
