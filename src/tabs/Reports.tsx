@@ -11,7 +11,8 @@ import { getExpenses } from "@/redux/slices/app/expenseApiThunk";
 
 /* ---------------- helpers ---------------- */
 
-const toISODate = (d: Date) => d.toISOString().slice(0, 10);
+// const toISODate = (d: Date) => d.toISOString().slice(0, 10);
+const toISODate = (d: Date) => d.toLocaleDateString('en-CA');
 const shortLabel = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 const monthKey = (d: string | Date) =>
   new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short" });
