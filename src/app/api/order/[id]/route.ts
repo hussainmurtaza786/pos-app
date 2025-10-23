@@ -36,7 +36,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
       include: {
         ProductInOrder: {
           include: {
-            product: true,
+            product: { include: { category: true } },
             inventory: true,
           }
         },
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       include: {
         ProductInOrder: {
           include: {
-            product: true,
+            product: {include: { category: true } },
             inventory: true,
           },
         },

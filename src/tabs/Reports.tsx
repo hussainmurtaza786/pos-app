@@ -1,281 +1,223 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Box, Heading, Text, Input, Button, HStack, VStack, Flex, IconButton, Spacer, Badge
-} from "@chakra-ui/react";
-import {
-  ResponsiveContainer,
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  PieChart, Pie, Cell,
-  BarChart, Bar,
-} from "recharts";
+import { Box, Heading, Text, Input, Button, HStack, VStack, Flex, IconButton, Spacer, Badge } from "@chakra-ui/react";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, BarChart, Bar, } from "recharts";
 import { BiRefresh, BiDownload, BiCalendar } from "react-icons/bi";
-
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { getOrders } from "@/redux/slices/app/orderApiThunk";
 import { getReturns } from "@/redux/slices/app/returnApiThunk";
 import { getExpenses } from "@/redux/slices/app/expenseApiThunk";
-import { getProductInOrders } from "@/redux/slices/app/productInOrderApiThunk";
-import { formatCurrency } from "../../helper";
 
-type OrderRow = {
-  id: string;
-  createdAt?: string;
-  totalAmount?: number;
-  total?: number;
-  amount?: number;
-  grandTotal?: number;
-};
+/* ---------------- helpers ---------------- */
 
-type ReturnRow = {
-  id: string;
-  createdAt?: string;
-  returnAmount?: number;
-  amount?: number;
-};
-
-type ExpenseRow = {
-  id: string;
-  createdAt?: string;
-  amount: number;
-};
-
-// helpers
 const toISODate = (d: Date) => d.toISOString().slice(0, 10);
 const shortLabel = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const monthKey = (d: string | Date) =>
+  new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short" });
 const n = (v: any) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 const fmtRs = (v: number) =>
   `Rs ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const monthKey = (d: string | Date) =>
-  new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short" });
 
-// colors to match your screenshots (purple/pink family)
+// palette similar to your theme/screenshots
 const COLORS = ["#8B5CF6", "#EC4899", "#7C3AED", "#A78BFA", "#F472B6", "#9333EA"];
+
+/* ---------------- component ---------------- */
 
 export default function Reports() {
   const dispatch = useAppDispatch();
 
-  // default last 30 days
+  // last 30 days default
   const today = new Date();
-  const minus30 = new Date();
-  minus30.setDate(today.getDate() - 29);
+  const start = new Date();
+  start.setDate(today.getDate() - 29);
 
-  const [from, setFrom] = useState(toISODate(minus30));
+  const [from, setFrom] = useState(toISODate(start));
   const [to, setTo] = useState(toISODate(today));
 
-  // store
-  const orderItems = useAppSelector((s: any) => s?.app?.order?.items ?? []);
-  const returnItems = useAppSelector((s: any) => s?.app?.return?.items ?? []);
-  const expenseItems = useAppSelector((s: any) => s?.app?.expense?.items ?? []);
-  const pioItems = useAppSelector((s: any) => s?.app?.productInOrder?.items ?? []);
+  // ---- correct store paths
+  const orderItems = useAppSelector((s) => s.app.order.items);
+  const returnItems = useAppSelector((s) => s.app.return.items);
+  const expenseItems = useAppSelector((s) => s.app.expenses.items);
 
-  const loadingOrders = useAppSelector((s: any) => s?.app?.fetchingStatus?.getOrders ?? false);
-  const loadingReturns = useAppSelector((s: any) => s?.app?.fetchingStatus?.getReturns ?? false);
-  const loadingExpenses = useAppSelector((s: any) => s?.app?.fetchingStatus?.getExpenses ?? false);
-  const loadingPIO = useAppSelector((s: any) => s?.app?.fetchingStatus?.getProductInOrders ?? false);
-  const loading = loadingOrders || loadingReturns || loadingExpenses || loadingPIO;
+  const loadingOrders = useAppSelector((s) => s.app.fetchingStatus.getOrders);
+  const loadingReturns = useAppSelector((s) => s.app.fetchingStatus.getReturns);
+  const loadingExpenses = useAppSelector((s) => s.app.fetchingStatus.getExpenses);
+  const loading = loadingOrders || loadingReturns || loadingExpenses;
+  const categories = useAppSelector(s => s.app.category.items);
 
-  // initial load
+  // Build a lookup map once
+  const categoryNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of categories) m.set(c.id, c.name);
+    return m;
+  }, [categories]);
+
+
+  // fetch once (large pages; client filters by date)
   useEffect(() => {
     dispatch(getOrders({ pageNumber: 1, pageSize: 1000 } as any));
     dispatch(getReturns({ pageNumber: 1, pageSize: 1000 } as any));
     dispatch(getExpenses({ pageNumber: 1, pageSize: 1000 } as any));
-    dispatch(getProductInOrders({ pageNumber: 1, pageSize: 2000 } as any));
   }, [dispatch]);
 
-  // normalize to local shapes
-  const orders: OrderRow[] = useMemo(
-    () =>
-      (orderItems as any[]).map((o) => ({
-        id: o.id,
-        createdAt: o.createdAt ?? null,
-        totalAmount: n(o.totalAmount),
-        total: n(o.total),
-        amount: n(o.amount),
-        grandTotal: n(o.grandTotal),
-      })),
-    [orderItems]
-  );
-
-  const returns: ReturnRow[] = useMemo(
-    () =>
-      (returnItems as any[]).map((r) => ({
-        id: r.id,
-        createdAt: r.createdAt ?? null,
-        returnAmount: n(r.returnAmount),
-        amount: n(r.amount),
-      })),
-    [returnItems]
-  );
-
-  const expenses: ExpenseRow[] = useMemo(
-    () =>
-      (expenseItems as any[]).map((e) => ({
-        id: e.id,
-        createdAt: e.createdAt ?? null,
-        amount: n(e.amount),
-      })),
-    [expenseItems]
-  );
-
-  // map: orderId -> createdAt (for filtering PIO by order date)
-  const orderDateById = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const o of orderItems as any[]) {
-      if (o?.id && o?.createdAt) m.set(o.id, o.createdAt);
-    }
-    return m;
-  }, [orderItems]);
-
-  // date range filter (inclusive)
+  // date-range helpers
   const fromDate = useMemo(() => new Date(`${from}T00:00:00`), [from]);
   const toDate = useMemo(() => new Date(`${to}T23:59:59.999`), [to]);
-
   const inRange = (iso?: string) => {
     if (!iso) return false;
     const d = new Date(iso);
     return d >= fromDate && d <= toDate;
   };
 
-  const ordersInRange = useMemo(() => orders.filter(o => inRange(o.createdAt)), [orders, from, to]);
-  const returnsInRange = useMemo(() => returns.filter(r => inRange(r.createdAt)), [returns, from, to]);
-  const expensesInRange = useMemo(() => expenses.filter(e => inRange(e.createdAt)), [expenses, from, to]);
+  // just filter
+  const ordersInRange = useMemo(() => (orderItems as any[]).filter(o => inRange(o?.createdAt)), [orderItems, fromDate, toDate]);
+  const returnsInRange = useMemo(() => (returnItems as any[]).filter(r => inRange(r?.createdAt)), [returnItems, fromDate, toDate]);
+  const expensesInRange = useMemo(() => (expenseItems as any[]).filter(e => inRange(e?.createdAt)), [expenseItems, fromDate, toDate]);
 
-  // totals
+  /* ---------- sales math from your Sales.tsx data model ----------
+     revenue := sum(order.ProductInOrder[].sellPrice * quantity)
+     sales   := max(0, revenue - order.discount)
+  ----------------------------------------------------------------*/
   const grossSales = useMemo(() => {
-    return ordersInRange.reduce((sum, o) => {
-      const val = n(o.totalAmount) || n(o.grandTotal) || n(o.total) || n(o.amount);
-      return sum + val;
-    }, 0);
+    let sum = 0;
+    for (const o of ordersInRange) {
+      const lines = (o as any)?.ProductInOrder ?? [];
+      const revenue = lines.reduce((s: number, l: any) => s + n(l?.sellPrice) * n(l?.quantity), 0);
+      const discount = n((o as any)?.discount);
+      sum += Math.max(0, revenue - discount);
+    }
+    return sum;
   }, [ordersInRange]);
 
-  const totalReturns = useMemo(() => {
-    return returnsInRange.reduce((sum, r) => sum + (n(r.returnAmount) || n(r.amount)), 0);
-  }, [returnsInRange]);
+  const totalReturns = useMemo(
+    () => returnsInRange.reduce((s: number, r: any) => s + (n(r?.returnAmount) || n(r?.amount)), 0),
+    [returnsInRange]
+  );
 
-  const totalExpenses = useMemo(() => {
-    return expensesInRange.reduce((sum, e) => sum + n(e.amount), 0);
-  }, [expensesInRange]);
+  const totalExpenses = useMemo(
+    () => expensesInRange.reduce((s: number, e: any) => s + n(e?.amount), 0),
+    [expensesInRange]
+  );
 
-  const netRevenue = useMemo(() => grossSales - totalReturns - totalExpenses, [grossSales, totalReturns, totalExpenses]);
+  const netRevenue = useMemo(
+    () => grossSales - totalReturns - totalExpenses,
+    [grossSales, totalReturns, totalExpenses]
+  );
 
-  // Category Performance (donut)
-  // Uses productInOrder rows; expects row.product.category.name, row.quantity, row.sellPrice/price
-  const categoryPerformance = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const row of pioItems as any[]) {
-      const orderId = row?.orderId;
-      const createdAt = orderId ? orderDateById.get(orderId) : null;
-      if (!inRange(createdAt ?? undefined)) continue;
+  // daily trend (continuous series over [from..to])
+  const dailyTrend = useMemo(() => {
+    const map = new Map<string, { sales: number; returns: number; expenses: number }>();
+    const add = (k: string, f: "sales" | "returns" | "expenses", v: number) => {
+      const row = map.get(k) ?? { sales: 0, returns: 0, expenses: 0 };
+      row[f] += v;
+      map.set(k, row);
+    };
 
-      const qty = n(row?.quantity) || 1;
-      const unit = n(row?.sellPrice) || n(row?.price) || n(row?.unitPrice);
-      const cat = row?.product?.category?.name || "Uncategorized";
-      map.set(cat, (map.get(cat) ?? 0) + qty * unit);
+    for (const o of ordersInRange) {
+      const k = String((o as any)?.createdAt ?? "").slice(0, 10);
+      if (!k) continue;
+      const lines = (o as any)?.ProductInOrder ?? [];
+      const revenue = lines.reduce((s: number, l: any) => s + n(l?.sellPrice) * n(l?.quantity), 0);
+      const discount = n((o as any)?.discount);
+      add(k, "sales", Math.max(0, revenue - discount));
     }
-    const arr = Array.from(map.entries()).map(([name, value]) => ({ name, value }));
-    arr.sort((a, b) => b.value - a.value);
-    return arr;
-  }, [pioItems, orderDateById, fromDate, toDate]);
+    for (const r of returnsInRange) {
+      const k = String((r as any)?.createdAt ?? "").slice(0, 10);
+      if (!k) continue;
+      add(k, "returns", n((r as any)?.returnAmount) || n((r as any)?.amount));
+    }
+    for (const e of expensesInRange) {
+      const k = String((e as any)?.createdAt ?? "").slice(0, 10);
+      if (!k) continue;
+      add(k, "expenses", n((e as any)?.amount));
+    }
 
-  // Sales vs Profit per month (bars)
-  // profit proxy = sales - returns - expenses (per month)
+    const rows: { label: string; sales: number; returns: number; expenses: number; net: number }[] = [];
+    for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
+      const key = toISODate(d);
+      const v = map.get(key) ?? { sales: 0, returns: 0, expenses: 0 };
+      rows.push({ label: shortLabel(d), sales: v.sales, returns: v.returns, expenses: v.expenses, net: v.sales - v.returns - v.expenses });
+    }
+    return rows;
+  }, [ordersInRange, returnsInRange, expensesInRange, fromDate, toDate]);
+
+  // category performance from order lines
+  const categoryPerformance = useMemo(() => {
+    const buckets = new Map<string, number>();
+
+    for (const o of ordersInRange) {
+      const lines = (o as any)?.ProductInOrder ?? [];
+      for (const l of lines) {
+        // prefer nested name if present, else derive from categoryId
+        const nestedName = l?.product?.category?.name as string | undefined;
+        const catId = l?.product?.categoryId as string | undefined;
+        const cat = nestedName ?? (catId ? (categoryNameById.get(catId) ?? "Uncategorized") : "Uncategorized");
+
+        const revenue = n(l?.sellPrice) * n(l?.quantity);
+        buckets.set(cat, (buckets.get(cat) ?? 0) + revenue);
+      }
+
+      // discount handling (subtract from current largest bucket)
+      const discount = n((o as any)?.discount);
+      if (discount > 0 && buckets.size) {
+        const [largestName] = [...buckets.entries()].sort((a, b) => b[1] - a[1])[0] ?? [];
+        if (largestName) {
+          buckets.set(largestName, Math.max(0, (buckets.get(largestName) ?? 0) - discount));
+        }
+      }
+    }
+
+    // shape for Recharts
+    const arr = [...buckets.entries()]
+      .map(([name, value]) => ({ name, value }))
+      .filter(d => d.value > 0) // avoid zero-slice rendering edge cases
+      .sort((a, b) => b.value - a.value);
+
+    return arr;
+  }, [ordersInRange, categoryNameById]);
+
+
+  // monthly bars: sales vs profit (profit ≈ sales - returns - expenses)
   const salesVsProfitMonthly = useMemo(() => {
     const salesByMonth = new Map<string, number>();
     const returnsByMonth = new Map<string, number>();
     const expensesByMonth = new Map<string, number>();
 
-    ordersInRange.forEach(o => {
-      const key = monthKey(o.createdAt ?? "");
-      const amt = n(o.totalAmount) || n(o.grandTotal) || n(o.total) || n(o.amount);
-      salesByMonth.set(key, (salesByMonth.get(key) ?? 0) + amt);
-    });
-    returnsInRange.forEach(r => {
-      const key = monthKey(r.createdAt ?? "");
-      const amt = n(r.returnAmount) || n(r.amount);
-      returnsByMonth.set(key, (returnsByMonth.get(key) ?? 0) + amt);
-    });
-    expensesInRange.forEach(e => {
-      const key = monthKey(e.createdAt ?? "");
-      const amt = n(e.amount);
-      expensesByMonth.set(key, (expensesByMonth.get(key) ?? 0) + amt);
-    });
+    for (const o of ordersInRange) {
+      const key = monthKey((o as any)?.createdAt ?? "");
+      const lines = (o as any)?.ProductInOrder ?? [];
+      const revenue = lines.reduce((s: number, l: any) => s + n(l?.sellPrice) * n(l?.quantity), 0);
+      const discount = n((o as any)?.discount);
+      salesByMonth.set(key, (salesByMonth.get(key) ?? 0) + Math.max(0, revenue - discount));
+    }
+    for (const r of returnsInRange) {
+      const key = monthKey((r as any)?.createdAt ?? "");
+      returnsByMonth.set(key, (returnsByMonth.get(key) ?? 0) + (n((r as any)?.returnAmount) || n((r as any)?.amount)));
+    }
+    for (const e of expensesInRange) {
+      const key = monthKey((e as any)?.createdAt ?? "");
+      expensesByMonth.set(key, (expensesByMonth.get(key) ?? 0) + n((e as any)?.amount));
+    }
 
-    // continuous month rows between from and to
     const start = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1);
     const end = new Date(toDate.getFullYear(), toDate.getMonth(), 1);
     const rows: { month: string; sales: number; profit: number }[] = [];
-    const cur = new Date(start);
-    while (cur <= end) {
-      const key = monthKey(cur);
+    for (let d = new Date(start); d <= end; d.setMonth(d.getMonth() + 1)) {
+      const key = monthKey(d);
       const s = salesByMonth.get(key) ?? 0;
       const ret = returnsByMonth.get(key) ?? 0;
       const exp = expensesByMonth.get(key) ?? 0;
       rows.push({ month: key, sales: s, profit: s - ret - exp });
-      cur.setMonth(cur.getMonth() + 1);
     }
     return rows;
   }, [ordersInRange, returnsInRange, expensesInRange, fromDate, toDate]);
 
-  // daily trend
-  const chartData = useMemo(() => {
-    const map = new Map<string, { sales: number; returns: number; expenses: number }>();
-
-    const add = (key: string, which: "sales" | "returns" | "expenses", val: number) => {
-      const row = map.get(key) ?? { sales: 0, returns: 0, expenses: 0 };
-      row[which] += val;
-      map.set(key, row);
-    };
-
-    ordersInRange.forEach(o => {
-      const key = (o.createdAt ?? "").slice(0, 10);
-      const val = n(o.totalAmount) || n(o.grandTotal) || n(o.total) || n(o.amount);
-      if (key) add(key, "sales", val);
-    });
-
-    returnsInRange.forEach(r => {
-      const key = (r.createdAt ?? "").slice(0, 10);
-      const val = n(r.returnAmount) || n(r.amount);
-      if (key) add(key, "returns", val);
-    });
-
-    expensesInRange.forEach(e => {
-      const key = (e.createdAt ?? "").slice(0, 10);
-      if (key) add(key, "expenses", n(e.amount));
-    });
-
-    // fill full range
-    const arr: { label: string; sales: number; returns: number; expenses: number; net: number }[] = [];
-    const start = new Date(fromDate);
-    const end = new Date(toDate);
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const key = toISODate(d);
-      const row = map.get(key) ?? { sales: 0, returns: 0, expenses: 0 };
-      arr.push({
-        label: shortLabel(d),
-        sales: row.sales,
-        returns: row.returns,
-        expenses: row.expenses,
-        net: row.sales - row.returns - row.expenses,
-      });
-    }
-    return arr;
-  }, [ordersInRange, returnsInRange, expensesInRange, fromDate, toDate]);
-
-  // export CSV
+  // export CSV for the trend
   function exportCSV() {
     const lines = [
       "Date,Gross Sales,Returns,Expenses,Net Revenue",
-      ...chartData.map(r =>
-        [
-          r.label,
-          r.sales.toFixed(2),
-          r.returns.toFixed(2),
-          r.expenses.toFixed(2),
-          r.net.toFixed(2),
-        ].join(",")
-      ),
+      ...dailyTrend.map(r => [r.label, r.sales.toFixed(2), r.returns.toFixed(2), r.expenses.toFixed(2), r.net.toFixed(2)].join(",")),
       "",
       `TOTAL,,${grossSales.toFixed(2)},${totalReturns.toFixed(2)},${totalExpenses.toFixed(2)},${netRevenue.toFixed(2)}`
     ];
@@ -288,6 +230,8 @@ export default function Reports() {
     URL.revokeObjectURL(url);
   }
 
+  /* ---------------- UI ---------------- */
+
   return (
     <Box p={6}>
       {/* Header + Filters */}
@@ -297,39 +241,26 @@ export default function Reports() {
         <HStack>
           <HStack>
             <BiCalendar />
-            <Input
-              type="date"
-              value={from}
-              max={to}
-              onChange={(e) => setFrom(e.target.value)}
-              height="42px"
-            />
+            <Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} height="42px" />
           </HStack>
           <HStack>
             <BiCalendar />
-            <Input
-              type="date"
-              value={to}
-              min={from}
-              onChange={(e) => setTo(e.target.value)}
-              height="42px"
-            />
+            <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} height="42px" />
           </HStack>
           <IconButton aria-label="Refresh data" onClick={() => {
             dispatch(getOrders({ pageNumber: 1, pageSize: 1000 } as any));
             dispatch(getReturns({ pageNumber: 1, pageSize: 1000 } as any));
             dispatch(getExpenses({ pageNumber: 1, pageSize: 1000 } as any));
-            dispatch(getProductInOrders({ pageNumber: 1, pageSize: 2000 } as any));
           }}>
             <BiRefresh />
           </IconButton>
-          <Button bgColor="teal" color="white" onClick={exportCSV} disabled={loading}>
-            <BiDownload style={{ marginRight: 6 }} /> CSV
+          <Button bgColor="teal" padding={6} color="white" onClick={exportCSV} disabled={loading}>
+            <BiDownload /> CSV
           </Button>
         </HStack>
       </Flex>
 
-      {/* KPI cards */}
+      {/* KPIs */}
       <Flex mt={5} gap={4} wrap="wrap">
         <StatCard title="Gross Sales" value={fmtRs(grossSales)} tone="blue" loading={loading} />
         <StatCard title="Returns" value={fmtRs(totalReturns)} tone="orange" loading={loading} />
@@ -341,24 +272,21 @@ export default function Reports() {
       <Box bg="white" p={4} rounded="xl" shadow="sm" mt={6} border="1px solid" borderColor="gray.200" w="100%" h="360px">
         <Text fontWeight="semibold" color="gray.800" mb={2}>Daily Trend</Text>
         <ResponsiveContainer width="100%" height="90%">
-          <LineChart data={chartData}>
+          <LineChart data={dailyTrend}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="label" />
             <YAxis width={80} tickFormatter={(v) => `Rs ${Number(v).toLocaleString()}`} />
-            <Tooltip
-              formatter={(v: any) => (formatCurrency ? formatCurrency(Number(v)) : fmtRs(Number(v)))}
-              labelFormatter={(l: any) => `Date: ${l}`}
-            />
+            <Tooltip formatter={(v: any) => fmtRs(Number(v))} labelFormatter={(l: any) => `Date: ${l}`} />
             <Legend />
-            <Line type="monotone" dataKey="sales" name="Sales" stroke="#7C3AED" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="returns" name="Returns" stroke="#EC4899" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="expenses" name="Expenses" stroke="#8B5CF6" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="sales" name="Sales" stroke="#0048ff" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="returns" name="Returns" stroke="#fb2a2a" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="expenses" name="Expenses" stroke="#EC4899" strokeWidth={2} dot={false} />
             <Line type="monotone" dataKey="net" name="Net" stroke="#10B981" strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </Box>
 
-      {/* Two-up: Category Performance + Sales vs Profit */}
+      {/* Two-up: Category + Sales vs Profit */}
       <Flex mt={6} gap={4} wrap="wrap">
         {/* Category Performance (Donut) */}
         <Box flex="1 1 380px" minW="320px" bg="white" p={4} rounded="xl" shadow="sm" border="1px solid" borderColor="gray.200">
@@ -366,7 +294,7 @@ export default function Reports() {
           <Box w="100%" h="280px">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Tooltip formatter={(v: any) => (formatCurrency ? formatCurrency(Number(v)) : fmtRs(Number(v)))} />
+                <Tooltip formatter={(v: any) => fmtRs(Number(v))} />
                 <Pie
                   data={categoryPerformance}
                   dataKey="value"
@@ -395,7 +323,7 @@ export default function Reports() {
           </HStack>
         </Box>
 
-        {/* Sales vs Profit (Bars, month-by-month) */}
+        {/* Sales vs Profit (Monthly) */}
         <Box flex="1 1 520px" minW="360px" bg="white" p={4} rounded="xl" shadow="sm" border="1px solid" borderColor="gray.200">
           <Flex align="center" justify="space-between" mb={2}>
             <Text fontWeight="semibold" color="gray.800">Sales vs Profit</Text>
@@ -407,10 +335,7 @@ export default function Reports() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis width={80} tickFormatter={(v) => `Rs ${Number(v).toLocaleString()}`} />
-                <Tooltip
-                  formatter={(v: any) => (formatCurrency ? formatCurrency(Number(v)) : fmtRs(Number(v)))}
-                  labelFormatter={(l: any) => `Month: ${l}`}
-                />
+                <Tooltip formatter={(v: any) => fmtRs(Number(v))} labelFormatter={(l: any) => `Month: ${l}`} />
                 <Legend />
                 <Bar dataKey="sales" name="Sales" fill="#7C3AED" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="profit" name="Profit" fill="#EC4899" radius={[6, 6, 0, 0]} />
@@ -420,22 +345,25 @@ export default function Reports() {
         </Box>
       </Flex>
 
-      {/* Recent items lists (no table, no Divider) */}
+      {/* Recent lists */}
       <Flex mt={6} gap={4} wrap="wrap">
         <ListCard
           title="Recent Orders"
-          items={ordersInRange.slice(0, 10).map(o => ({
-            primary: fmtRs(n(o.totalAmount) || n(o.grandTotal) || n(o.total) || n(o.amount)),
-            secondary: o.createdAt?.slice(0, 10) || "",
-          }))}
+          items={ordersInRange.slice(0, 10).map(o => {
+            const lines = (o as any)?.ProductInOrder ?? [];
+            const revenue = lines.reduce((s: number, l: any) => s + n(l?.sellPrice) * n(l?.quantity), 0);
+            const discount = n((o as any)?.discount);
+            const sales = Math.max(0, revenue - discount);
+            return { primary: fmtRs(sales), secondary: (o as any)?.createdAt?.slice(0, 10) ?? "" };
+          })}
           badge="Order"
           tone="blue"
         />
         <ListCard
           title="Recent Returns"
           items={returnsInRange.slice(0, 10).map(r => ({
-            primary: fmtRs(n(r.returnAmount) || n(r.amount)),
-            secondary: r.createdAt?.slice(0, 10) || "",
+            primary: fmtRs(n((r as any)?.returnAmount) || n((r as any)?.amount)),
+            secondary: (r as any)?.createdAt?.slice(0, 10) ?? "",
           }))}
           badge="Return"
           tone="orange"
@@ -443,8 +371,8 @@ export default function Reports() {
         <ListCard
           title="Recent Expenses"
           items={expensesInRange.slice(0, 10).map(e => ({
-            primary: fmtRs(n(e.amount)),
-            secondary: e.createdAt?.slice(0, 10) || "",
+            primary: fmtRs(n((e as any)?.amount)),
+            secondary: (e as any)?.createdAt?.slice(0, 10) ?? "",
           }))}
           badge="Expense"
           tone="red"
@@ -454,7 +382,8 @@ export default function Reports() {
   );
 }
 
-/** Minimal stat card (no FormControl/Table/Divider) */
+/* ---------------- mini UI bits ---------------- */
+
 function StatCard({
   title,
   value,
@@ -483,7 +412,6 @@ function StatCard({
   );
 }
 
-/** Simple list card to show recent items */
 function ListCard({
   title,
   items,

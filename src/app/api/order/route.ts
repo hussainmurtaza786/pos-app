@@ -103,7 +103,10 @@ export async function PUT(req: NextRequest) {
           },
           include: {
             ProductInOrder: {
-              include: { product: true, inventory: true },
+              include: {
+                product: { include: { category: true } },
+                inventory: true
+              },
             },
           },
         });
@@ -172,7 +175,7 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: "desc" },
         where,
         include: {
-          ProductInOrder: { include: { inventory: true, product: true } },
+          ProductInOrder: { include: { inventory: true, product: { include: { category: true } } } },
         },
       }),
       prisma.order.count({ where }),

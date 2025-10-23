@@ -2,7 +2,7 @@
 // import { Dashboard } from '@/tabs/Dashboard';
 // import Expenses from '@/tabs/Expenses';
 import { Layout } from '@/tabs/Layout';
-import { Reports } from '@/tabs/Reports';
+// import { Reports } from '@/tabs/Reports';
 // import Returns from '@/tabs/Return';
 import React, { useState, useEffect } from 'react';
 import Sales from '@/tabs/Sales';
@@ -15,6 +15,7 @@ import Order from '@/tabs/orderTab';
 import Dashboard from '../tabs/dashboard/index';
 import ReturnPage from '@/tabs/Return';
 import ExpenseTab from '@/tabs/ExpenseTab';
+import Reports from '@/tabs/Reports';
 function App() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');

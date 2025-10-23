@@ -43,23 +43,42 @@ export default function ExpenseTab() {
       );
     });
   }, [expenses, search]);
+
+  // make a safe YYYY-MM-DD key in LOCAL time (avoids TZ shifts)
+  const toLocalISOKey = (v: unknown): string | null => {
+    if (!v) return null;
+    const d = v instanceof Date ? v : new Date(String(v));
+    if (Number.isNaN(d.getTime())) return null;
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
   const chartData = useMemo(() => {
     if (!expenses?.length) return [];
-    const dailyTotals: Record<string, number> = {};
+
+    const totals = new Map<string, number>();
 
     for (const exp of expenses) {
-      const dateKey = exp.createdAt
-        ? new Date(exp.createdAt).toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        })
-        : 'Unknown';
-      dailyTotals[dateKey] = (dailyTotals[dateKey] || 0) + (Number(exp.amount) || 0);
+      const key = toLocalISOKey((exp as any).createdAt);
+      if (!key) continue; // skip bad dates
+      const amt = Number((exp as any).amount) || 0;
+      totals.set(key, (totals.get(key) ?? 0) + amt);
     }
 
-    return Object.entries(dailyTotals).map(([label, value]) => ({ label, value }));
+    return [...totals.entries()]
+      .sort(([a], [b]) => a.localeCompare(b)) // ascending: 16 -> 17 -> 18 ...
+      .map(([iso, value]) => ({
+        label: new Date(iso).toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }),
+        value,
+      }));
   }, [expenses]);
+
 
   // 💰 Calculate total
   const totalExpense = useMemo(() => {
@@ -125,7 +144,7 @@ export default function ExpenseTab() {
               <YAxis width={80} tickFormatter={(v) => `Rs ${Number(v).toLocaleString()}`} />
               <Tooltip formatter={(v) => formatCurrency(Number(v))} labelFormatter={(l) => `Date: ${l}`} />
               <Legend />
-              <Line type="monotone" dataKey="value" name="Daily Expenses" stroke="#ef4444" strokeWidth={2} />
+              <Line type="monotone" dataKey="value" name="Daily Expenses" stroke="#ef4444" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </Box>
