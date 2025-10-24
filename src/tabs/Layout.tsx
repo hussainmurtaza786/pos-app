@@ -36,11 +36,11 @@ export const Layout: React.FC<LayoutProps> = ({
     const navigation = [
         { id: "dashboard", label: "Dashboard", icon: <FaChartBar size={18} /> },
         { id: "sales", label: "Orders", icon: <FaFileInvoice size={18} /> },
+        { id: "returns", label: "Returns", icon: <FiRotateCcw size={18} /> },
         { id: "orders", label: "Orders & Return History", icon: <FaFileInvoice size={18} /> },
-        { id: "expenses", label: "Expenses", icon: <FaMoneyBillWave size={18} /> },
         { id: "inventory", label: "Inventory", icon: <HiOutlineCube size={18} /> },
         { id: "products", label: "Product", icon: <GoPackage size={18} /> },
-        { id: "returns", label: "Returns", icon: <FiRotateCcw size={18} /> },
+        { id: "expenses", label: "Expenses", icon: <FaMoneyBillWave size={18} /> },
         { id: "reports", label: "Reports", icon: <FiFileText size={18} /> },
     ];
 

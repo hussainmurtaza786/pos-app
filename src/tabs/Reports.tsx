@@ -1,34 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Box,
-  Heading,
-  Text,
-  Input,
-  Button,
-  HStack,
-  VStack,
-  Flex,
-  IconButton,
-  Spacer,
-  Badge,
-} from "@chakra-ui/react";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-} from "recharts";
+import { Box, Heading, Text, Input, Button, HStack, VStack, Flex, IconButton, Spacer, Badge, } from "@chakra-ui/react";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, BarChart, Bar, } from "recharts";
 import { BiRefresh, BiDownload, BiCalendar } from "react-icons/bi";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { getOrders } from "@/redux/slices/app/orderApiThunk";
@@ -291,7 +265,7 @@ export default function Reports() {
       returnsByMonth.set(
         key,
         (returnsByMonth.get(key) ?? 0) +
-          (n((r as any)?.returnAmount) || n((r as any)?.amount))
+        (n((r as any)?.returnAmount) || n((r as any)?.amount))
       );
     }
     for (const e of expensesInRange) {
@@ -477,9 +451,7 @@ export default function Reports() {
             />
           </LineChart>
         </ResponsiveContainer>
-      </Box>
-
-      {/* Two-up: Category + Sales vs Profit */}
+      </Box>      {/* Two-up: Category + Sales vs Profit */}
       <Flex mt={6} gap={4} wrap="wrap">
         {/* Category Performance (Donut) */}
         <Box
