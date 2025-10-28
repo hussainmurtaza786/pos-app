@@ -109,7 +109,7 @@ export default function ExpenseTab() {
           onPaginationChange={handlePaginationChange}
           columns={[
             { accessKey: "id", label: "Id", align: "left", format: val => <ViewExpense expenseId={val} /> },
-            { accessKey: "amount", label: "sku", align: "left" },
+            { accessKey: "amount", label: "Amount", align: "left" },
             { accessKey: "reason", label: "Reason", align: "left", },
 
             {

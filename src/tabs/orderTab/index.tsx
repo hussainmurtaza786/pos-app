@@ -85,9 +85,9 @@ export default function Order() {
           onPaginationChange={handlePaginationChange}
           columns={[
             { accessKey: "id", label: "Id", align: "left", format: val => <ViewOrder orderId={val} /> },
-            { accessKey: "amountReceived", label: "Amt Rtn", align: "left" },
+            { accessKey: "amountReceived", label: "Amt Recv", align: "left" },
             {
-              accessKey: "ProductInOrder", label: "Amt Recv", align: "left", format: (val, rowValues) => {
+              accessKey: "ProductInOrder", label: "Amt Rtn", align: "left", format: (val, rowValues) => {
                 const lineTotal = (val || []).reduce(
                   (acc: number, curr: any) => acc + (Number(curr.sellPrice) * Number(curr.quantity)),
                   0

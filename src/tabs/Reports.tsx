@@ -1,8 +1,34 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Box, Heading, Text, Input, Button, HStack, VStack, Flex, IconButton, Spacer, Badge, } from "@chakra-ui/react";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, BarChart, Bar, } from "recharts";
+import {
+  Box,
+  Heading,
+  Text,
+  Input,
+  Button,
+  HStack,
+  VStack,
+  Flex,
+  IconButton,
+  Spacer,
+  Badge,
+} from "@chakra-ui/react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+} from "recharts";
 import { BiRefresh, BiDownload, BiCalendar } from "react-icons/bi";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { getOrders } from "@/redux/slices/app/orderApiThunk";
@@ -123,10 +149,7 @@ export default function Reports() {
     [orderItems]
   );
 
-  /* ---------- sales math ----------
-     revenue := sum(order.ProductInOrder[].sellPrice * quantity)
-     sales   := max(0, revenue - order.discount)
-  ----------------------------------*/
+  /* ---------- sales math ---------- */
 
   // All-time Gross Sales KPI (Completed only, no date filter)
   const grossSalesAllTime = useMemo(() => {
@@ -142,12 +165,23 @@ export default function Reports() {
     return sum;
   }, [completedOrdersInRange]);
 
+  // -------- NEW: All-time Returns & Expenses (ignore calendar) --------
+  const totalReturnsAllTime = useMemo(
+    () =>
+      (returnItems as any[]).reduce((s, r: any) => s + (n(r?.returnAmount) || n(r?.amount)),
+        0),
+    [returnItems]
+  );
+
+  const totalExpensesAllTime = useMemo(
+    () => (expenseItems as any[]).reduce((s, e: any) => s + n(e?.amount), 0),
+    [expenseItems]
+  );
+
+  // Keep range versions for charts/CSV
   const totalReturns = useMemo(
     () =>
-      returnsInRange.reduce(
-        (s: number, r: any) => s + (n(r?.returnAmount) || n(r?.amount)),
-        0
-      ),
+      returnsInRange.reduce((s: number, r: any) => s + (n(r?.returnAmount) || n(r?.amount)),0),
     [returnsInRange]
   );
 
@@ -156,10 +190,16 @@ export default function Reports() {
     [expensesInRange]
   );
 
-  // netRevenue stays range-based to match the selected window
+  // All-time Net Revenue KPI
+  const netRevenueAllTime = useMemo(
+    () => grossSalesAllTime - totalReturnsAllTime - totalExpensesAllTime,
+    [grossSalesAllTime, totalReturnsAllTime, totalExpensesAllTime]
+  );
+
+  // Range Net Revenue (used for charts/CSV if needed)
   const netRevenue = useMemo(
-    () => grossSalesAllTime - totalReturns - totalExpenses,
-    [grossSalesAllTime, totalReturns, totalExpenses]
+    () => grossSalesInRange - totalReturns - totalExpenses,
+    [grossSalesInRange, totalReturns, totalExpenses]
   );
 
   // daily trend (continuous series over [from..to]) using Completed orders
@@ -175,13 +215,14 @@ export default function Reports() {
       map.set(k, row);
     };
 
-    // sales from Completed orders only
+    // sales from Completed orders only (range)
     for (const o of completedOrdersInRange) {
       const key = toLocalISOKey((o as any)?.createdAt);
       if (!key) continue;
       add(key, "sales", orderSales(o));
     }
 
+    // returns/expenses (range)
     for (const r of returnsInRange) {
       const key = toLocalISOKey((r as any)?.createdAt);
       if (!key) continue;
@@ -214,7 +255,7 @@ export default function Reports() {
     return rows;
   }, [completedOrdersInRange, returnsInRange, expensesInRange, fromDate, toDate]);
 
-  // category performance from Completed order lines
+  // category performance from Completed order lines (all-time)
   const categoryPerformance = useMemo(() => {
     const buckets = new Map<string, number>();
 
@@ -248,7 +289,7 @@ export default function Reports() {
       .map(([name, value]) => ({ name, value }))
       .filter((d) => d.value > 0)
       .sort((a, b) => b.value - a.value);
-  }, [completedOrdersInRange, categoryNameById]);
+  }, [completedOrdersAllTime, categoryNameById]); // fixed dependency
 
   // monthly bars: sales (Completed only) vs profit (range-based)
   const salesVsProfitMonthly = useMemo(() => {
@@ -265,15 +306,12 @@ export default function Reports() {
       returnsByMonth.set(
         key,
         (returnsByMonth.get(key) ?? 0) +
-        (n((r as any)?.returnAmount) || n((r as any)?.amount))
+          (n((r as any)?.returnAmount) || n((r as any)?.amount))
       );
     }
     for (const e of expensesInRange) {
       const key = monthKey((e as any)?.createdAt ?? "");
-      expensesByMonth.set(
-        key,
-        (expensesByMonth.get(key) ?? 0) + n((e as any)?.amount)
-      );
+      expensesByMonth.set(key,(expensesByMonth.get(key) ?? 0) + n((e as any)?.amount));
     }
 
     const start = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1);
@@ -287,7 +325,7 @@ export default function Reports() {
       rows.push({ month: key, sales: s, profit: s - ret - exp });
     }
     return rows;
-  }, [completedOrdersInRange, returnsInRange, expensesInRange, fromDate, toDate]);
+  }, [completedOrdersAllTime, returnsInRange, expensesInRange, fromDate, toDate]);
 
   // export CSV for the trend (range totals)
   function exportCSV() {
@@ -297,7 +335,8 @@ export default function Reports() {
         [r.label, r.sales.toFixed(2), r.returns.toFixed(2), r.expenses.toFixed(2), r.net.toFixed(2)].join(",")
       ),
       "",
-      `TOTAL,,${grossSalesInRange.toFixed(2)},${totalReturns.toFixed(2)},${totalExpenses.toFixed(2)},${netRevenue.toFixed(2)}`,
+      // fixed column count for TOTAL row
+      ["TOTAL", grossSalesInRange.toFixed(2), totalReturns.toFixed(2), totalExpenses.toFixed(2), netRevenue.toFixed(2)].join(","),
     ];
     const blob = new Blob([lines.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -320,7 +359,7 @@ export default function Reports() {
         <Spacer />
         <HStack>
           <HStack>
-            <BiCalendar />
+            <Text>From</Text>
             <Input
               type="date"
               value={from}
@@ -330,7 +369,7 @@ export default function Reports() {
             />
           </HStack>
           <HStack>
-            <BiCalendar />
+            <Text>To</Text>
             <Input
               type="date"
               value={to}
@@ -370,21 +409,21 @@ export default function Reports() {
           loading={loading}
         />
         <StatCard
-          title="Returns (range)"
-          value={fmtRs(totalReturns)}
+          title="Returns (All time)"
+          value={fmtRs(totalReturnsAllTime)}
           tone="orange"
           loading={loading}
         />
         <StatCard
-          title="Expenses (range)"
-          value={fmtRs(totalExpenses)}
+          title="Expenses (All time)"
+          value={fmtRs(totalExpensesAllTime)}
           tone="red"
           loading={loading}
         />
         <StatCard
-          title="Net Revenue (range)"
-          value={fmtRs(netRevenue)}
-          tone={netRevenue >= 0 ? "green" : "red"}
+          title="Net Revenue (All time)"
+          value={fmtRs(netRevenueAllTime)}
+          tone={netRevenueAllTime >= 0 ? "green" : "red"}
           loading={loading}
         />
       </Flex>
@@ -451,7 +490,9 @@ export default function Reports() {
             />
           </LineChart>
         </ResponsiveContainer>
-      </Box>      {/* Two-up: Category + Sales vs Profit */}
+      </Box>
+
+      {/* Two-up: Category + Sales vs Profit */}
       <Flex mt={6} gap={4} wrap="wrap">
         {/* Category Performance (Donut) */}
         <Box
