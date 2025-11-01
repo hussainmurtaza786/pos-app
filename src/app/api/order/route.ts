@@ -1,7 +1,7 @@
 import prisma from "@/prisma/client";
 import { NextRequest } from "next/server";
 import * as yup from "yup";
-import { parseQueryParams } from "../utils";
+import { generateUniqueNumber, parseQueryParams } from "../utils";
 import { verifyAuthorization } from "@/utils";
 import { Status, Prisma } from "@prisma/client";
 import { Order } from "@/prisma/customTypes";
@@ -86,6 +86,7 @@ export async function PUT(req: NextRequest) {
         // create order + items
         return tx.order.create({
           data: {
+            id: `ord-${generateUniqueNumber()}`,
             description,
             discount,
             amountReceived,

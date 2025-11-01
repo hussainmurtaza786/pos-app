@@ -2,7 +2,7 @@
 import prisma from "@/prisma/client";
 import { NextRequest } from "next/server";
 import * as yup from "yup";
-import { parseQueryParams } from "../utils";
+import { generateUniqueNumber, parseQueryParams } from "../utils";
 import { verifyAuthorization } from "@/utils";
 import { Prisma } from "@prisma/client";
 import { ReturnOrder } from "@/prisma/customTypes";
@@ -100,8 +100,8 @@ export async function PUT(req: NextRequest) {
         // Create the return order and line items
         return tx.returnOrder.create({
           data: {
+            id: `ret-${generateUniqueNumber()}`,
             description,
-
             returnAmount: finalReturnAmount, // <- persist cash returned
             createdById: user.id,
             ReturnOrderProduct: {

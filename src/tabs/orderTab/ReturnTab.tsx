@@ -119,7 +119,7 @@ export function ViewReturn({ returnId }: { returnId: number }) {
         <Dialog.Root onOpenChange={({ open }) => setModalOpenState(open)} scrollBehavior="inside" placement="center" size="sm">
             <Dialog.Trigger asChild>
                 <Button variant="subtle" color="blue" size="sm">
-                    View #{returnId}
+                    {returnId}
                 </Button>
             </Dialog.Trigger>
             <Portal>

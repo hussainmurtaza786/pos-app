@@ -148,7 +148,7 @@ export function ViewOrder({ orderId }: { orderId: number }) {
     >
       <Dialog.Trigger asChild>
         <Button variant="subtle" color="blue" size="sm">
-          View #{orderId}
+          {orderId}
         </Button>
       </Dialog.Trigger>
       <Portal>

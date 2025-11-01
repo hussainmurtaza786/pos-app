@@ -30,7 +30,7 @@ export interface ReturnDeleteOutput {
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   try {
     const item = await prisma.returnOrder.findUnique({
-      where: { id: Number(params.id) }, // now using ReturnOrder.id
+      where: { id: (params.id) }, // now using ReturnOrder.id
       include: {
         ReturnOrderProduct: {
           include: {
@@ -73,14 +73,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     );
 
     const existing = await prisma.returnOrder.findUnique({
-      where: { id: Number(id) },
+      where: { id: (id) },
     });
     if (!existing) {
       return NextResponse.json({ error: "Return order not found" }, { status: 404 });
     }
 
     const updated = await prisma.returnOrder.update({
-      where: { id: Number(id) },
+      where: { id: (id) },
       data: {
         description: data.description,
       },
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
   try {
     const returnOrder = await prisma.returnOrder.delete({
-      where: { id: Number(params.id) }, // using id now
+      where: { id: (params.id) }, // using id now
     });
 
     return NextResponse.json({ data: returnOrder } as ReturnDeleteOutput, { status: 200 });

@@ -77,7 +77,7 @@ model Inventory {
 }
 
 model Order {
-  id             Int     @id @default(autoincrement())
+  id             String  @id @default(cuid())
   description    String?
   discount       Float
   amountReceived Float
@@ -93,7 +93,7 @@ model Order {
 }
 
 model ProductInOrder {
-  orderId     Int
+  orderId     String
   productId   String
   inventoryId String?
   quantity    Int
@@ -109,7 +109,7 @@ model ProductInOrder {
 }
 
 model ReturnOrder {
-  id           Int       @id @default(autoincrement())
+  id           String    @id @default(cuid())
   description  String?
   returnAmount Float
   createdAt    DateTime  @default(now())
@@ -122,7 +122,7 @@ model ReturnOrder {
 }
 
 model ReturnOrderProduct {
-  returnOrderId Int
+  returnOrderId String
   productId     String
   quantity      Int
   sellPrice     Float
