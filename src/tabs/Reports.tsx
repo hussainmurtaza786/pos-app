@@ -1,34 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Box,
-  Heading,
-  Text,
-  Input,
-  Button,
-  HStack,
-  VStack,
-  Flex,
-  IconButton,
-  Spacer,
-  Badge,
-} from "@chakra-ui/react";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-} from "recharts";
+import { Box, Heading, Text, Input, Button, HStack, VStack, Flex, IconButton, Spacer, Badge, } from "@chakra-ui/react";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, BarChart, Bar, } from "recharts";
 import { BiRefresh, BiDownload, BiCalendar } from "react-icons/bi";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { getOrders } from "@/redux/slices/app/orderApiThunk";
@@ -181,7 +155,7 @@ export default function Reports() {
   // Keep range versions for charts/CSV
   const totalReturns = useMemo(
     () =>
-      returnsInRange.reduce((s: number, r: any) => s + (n(r?.returnAmount) || n(r?.amount)),0),
+      returnsInRange.reduce((s: number, r: any) => s + (n(r?.returnAmount) || n(r?.amount)), 0),
     [returnsInRange]
   );
 
@@ -264,23 +238,16 @@ export default function Reports() {
       for (const l of lines) {
         const nestedName = l?.product?.category?.name as string | undefined;
         const catId = l?.product?.categoryId as string | undefined;
-        const cat =
-          nestedName ??
-          (catId ? categoryNameById.get(catId) ?? "Uncategorized" : "Uncategorized");
-
+        const cat = nestedName ?? (catId ? categoryNameById.get(catId) ?? "Uncategorized" : "Uncategorized");
         const revenue = n(l?.sellPrice) * n(l?.quantity);
         buckets.set(cat, (buckets.get(cat) ?? 0) + revenue);
       }
 
       const discount = n((o as any)?.discount);
       if (discount > 0 && buckets.size) {
-        const [largestName] =
-          [...buckets.entries()].sort((a, b) => b[1] - a[1])[0] ?? [];
+        const [largestName] = [...buckets.entries()].sort((a, b) => b[1] - a[1])[0] ?? [];
         if (largestName) {
-          buckets.set(
-            largestName,
-            Math.max(0, (buckets.get(largestName) ?? 0) - discount)
-          );
+          buckets.set(largestName, Math.max(0, (buckets.get(largestName) ?? 0) - discount));
         }
       }
     }
@@ -303,15 +270,11 @@ export default function Reports() {
     }
     for (const r of returnsInRange) {
       const key = monthKey((r as any)?.createdAt ?? "");
-      returnsByMonth.set(
-        key,
-        (returnsByMonth.get(key) ?? 0) +
-          (n((r as any)?.returnAmount) || n((r as any)?.amount))
-      );
+      returnsByMonth.set(key, (returnsByMonth.get(key) ?? 0) + (n((r as any)?.returnAmount) || n((r as any)?.amount)));
     }
     for (const e of expensesInRange) {
       const key = monthKey((e as any)?.createdAt ?? "");
-      expensesByMonth.set(key,(expensesByMonth.get(key) ?? 0) + n((e as any)?.amount));
+      expensesByMonth.set(key, (expensesByMonth.get(key) ?? 0) + n((e as any)?.amount));
     }
 
     const start = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1);
@@ -331,10 +294,7 @@ export default function Reports() {
   function exportCSV() {
     const lines = [
       "Date,Gross Sales,Returns,Expenses,Net Revenue",
-      ...dailyTrend.map((r) =>
-        [r.label, r.sales.toFixed(2), r.returns.toFixed(2), r.expenses.toFixed(2), r.net.toFixed(2)].join(",")
-      ),
-      "",
+      ...dailyTrend.map((r) => [r.label, r.sales.toFixed(2), r.returns.toFixed(2), r.expenses.toFixed(2), r.net.toFixed(2)].join(",")), "",
       // fixed column count for TOTAL row
       ["TOTAL", grossSalesInRange.toFixed(2), totalReturns.toFixed(2), totalExpenses.toFixed(2), netRevenue.toFixed(2)].join(","),
     ];
@@ -352,10 +312,11 @@ export default function Reports() {
   return (
     <Box p={6}>
       {/* Header + Filters */}
-      <Flex align="center" wrap="wrap" gap={3}>
-        <Heading size="lg" color="gray.800">
-          Reports
-        </Heading>
+      <Flex mb={5} w="100%" align="center" justify="space-between">
+                <Box>
+                    <Heading fontFamily="poppins" fontSize="3xl" fontWeight="bold">Reports</Heading>
+                    <Text>Overview of your Business Performance</Text>
+                </Box>
         <Spacer />
         <HStack>
           <HStack>
@@ -505,9 +466,7 @@ export default function Reports() {
           border="1px solid"
           borderColor="gray.200"
         >
-          <Text fontWeight="semibold" color="gray.800" mb={2}>
-            Category Performance (Completed sales)
-          </Text>
+          <Text fontWeight="semibold" color="gray.800" mb={2}> Category Performance (Completed sales) </Text>
           <Box w="100%" h="280px">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -559,9 +518,7 @@ export default function Reports() {
           borderColor="gray.200"
         >
           <Flex align="center" justify="space-between" mb={2}>
-            <Text fontWeight="semibold" color="gray.800">
-              Sales vs Profit (Completed sales)
-            </Text>
+            <Text fontWeight="semibold" color="gray.800"> Sales vs Profit (Completed sales) </Text>
             <Badge colorScheme="gray">
               range: {from} → {to}
             </Badge>
@@ -604,29 +561,21 @@ export default function Reports() {
           title="Recent Orders (Completed)"
           items={completedOrdersInRange.slice(0, 10).map((o) => {
             const sales = orderSales(o);
-            return {
-              primary: fmtRs(sales),
-              secondary: (o as any)?.createdAt?.slice(0, 10) ?? "",
-            };
+            return { primary: fmtRs(sales), secondary: (o as any)?.createdAt?.slice(0, 10) ?? "", };
           })}
           badge="Order"
           tone="blue"
         />
         <ListCard
           title="Recent Returns"
-          items={returnsInRange.slice(0, 10).map((r) => ({
-            primary: fmtRs(n((r as any)?.returnAmount) || n((r as any)?.amount)),
-            secondary: (r as any)?.createdAt?.slice(0, 10) ?? "",
-          }))}
+          items={returnsInRange.slice(0, 10).map((r) => ({ primary: fmtRs(n((r as any)?.returnAmount) || n((r as any)?.amount)), secondary: (r as any)?.createdAt?.slice(0, 10) ?? "", }
+          ))}
           badge="Return"
           tone="orange"
         />
         <ListCard
           title="Recent Expenses"
-          items={expensesInRange.slice(0, 10).map((e) => ({
-            primary: fmtRs(n((e as any)?.amount)),
-            secondary: (e as any)?.createdAt?.slice(0, 10) ?? "",
-          }))}
+          items={expensesInRange.slice(0, 10).map((e) => ({ primary: fmtRs(n((e as any)?.amount)), secondary: (e as any)?.createdAt?.slice(0, 10) ?? "", }))}
           badge="Expense"
           tone="red"
         />

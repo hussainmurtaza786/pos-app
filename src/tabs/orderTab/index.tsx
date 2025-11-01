@@ -17,10 +17,10 @@ export default function Order() {
   const [search, setSearch] = useState("");
 
 
-  // Pagination for Orders
+  // Pagination for Orders.
   const handlePaginationChange = useCallback(async (pageNumber: number, pageSize: number) => {
     await dispatch(getOrders({ ...input, pageNumber, pageSize })).unwrap();
-  }, [dispatch, input]);
+  }, [dispatch]);
 
   // Refresh Orders (kept as-is)
   const handleRefresh = useCallback(() => {

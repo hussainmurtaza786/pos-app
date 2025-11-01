@@ -1,13 +1,14 @@
 'use client';
-import React, { useEffect, useMemo } from 'react';
-import { Box, Flex, Heading, Text, Grid, Icon as ChakraIcon, VStack } from '@chakra-ui/react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Box, Flex, Heading, Text, Grid, Icon as ChakraIcon, VStack, IconButton, HStack, Spinner, } from '@chakra-ui/react';
 import { FaCalculator, FaDollarSign } from 'react-icons/fa';
 import { BiTrendingUp } from 'react-icons/bi';
+import { IoMdRefresh } from 'react-icons/io';
 import { useAppDispatch, useAppSelector } from '@/redux/store';
 import { getOrders } from '@/redux/slices/app/orderApiThunk';
 import { getInventories } from '@/redux/slices/app/inventoryApiThunks';
 import { getReturns } from '@/redux/slices/app/returnApiThunk';
-import { getExpenses } from '@/redux/slices/app/expenseApiThunk'; // ⬅️ NEW
+import { getExpenses } from '@/redux/slices/app/expenseApiThunk';
 import type {
   Order as AppOrder,
   ProductInOrder as AppProductInOrder,
@@ -16,7 +17,7 @@ import type {
 } from '@/prisma/customTypes';
 import type { ReturnOrderProduct as AppReturnOrderProduct } from '@prisma/client';
 import { LuReceiptText, LuRotateCcw } from 'react-icons/lu';
-import { color } from '@/components/Dialog';
+import { InlineSpinner } from '@/components/CustomFunctions';
 
 /* ---------------- helpers ---------------- */
 
@@ -38,6 +39,9 @@ const isSameDay = (a: Date, b: Date) =>
   a.getDate() === b.getDate();
 const isSameMonth = (a: Date, b: Date) =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+
+const fmtTime = (d?: Date | null) =>
+  d ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
 
 /* ---------------- Card ---------------- */
 
@@ -91,7 +95,6 @@ function useSalesProfitFromCompleted(orders: AppOrder[], inventories: AppInvento
   const today = startOfToday();
   const now = new Date();
 
-  // WAC per productId
   const wacByProduct = useMemo(() => {
     const totals = new Map<string, { qty: number; value: number }>();
     for (const inv of inventories || []) {
@@ -130,7 +133,6 @@ function useSalesProfitFromCompleted(orders: AppOrder[], inventories: AppInvento
   };
 
   for (const o of orders || []) {
-    // 🚫 Skip anything not COMPLETED
     const status = String((o as any).status || '').toLowerCase();
     if (status !== 'completed') continue;
 
@@ -160,13 +162,31 @@ const SalesAndProfit: React.FC = () => {
   const orders = useAppSelector((s) => (s.app.order?.items as AppOrder[]) ?? []);
   const inventories = useAppSelector((s) => (s.app.inventory?.items as AppInventory[]) ?? []);
   const returns = useAppSelector((s) => (s.app.return?.items as ReturnOrder[]) ?? []);
-  const expenses = useAppSelector((s) => s.app.expenses?.items ?? []); // ⬅️ NEW
+  const expenses = useAppSelector((s) => s.app.expenses?.items ?? []);
 
+  // fetching flags (same map used in Orders page)
+  const loadingOrders = useAppSelector((s) => s.app.fetchingStatus.getOrders ?? false);
+  const loadingInventories = useAppSelector((s) => s.app.fetchingStatus.getInventories ?? false);
+  const loadingReturns = useAppSelector((s) => s.app.fetchingStatus.getReturns ?? false);
+  const loadingExpenses = useAppSelector((s) => s.app.fetchingStatus.getExpenses ?? false);
+  const anyLoading = loadingOrders || loadingInventories || loadingReturns || loadingExpenses;
+
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
+
+  const refreshAll = () => {
+    dispatch(getOrders({ pageNumber: 1, pageSize: 10 } as any));
+    dispatch(getInventories({ pageNumber: 1, pageSize: 10 } as any));
+    dispatch(getReturns({ pageNumber: 1, pageSize: 10 } as any));
+    dispatch(getExpenses({ pageNumber: 1, pageSize: 10 } as any));
+    setLastRefreshedAt(new Date());
+  };
+
+  // initial fetch (first mount)
   useEffect(() => {
-    if (!orders.length) dispatch(getOrders({ pageNumber: 1, pageSize: 1000 } as any));
-    if (!inventories.length) dispatch(getInventories({ pageNumber: 1, pageSize: 1000 } as any));
-    if (!returns.length) dispatch(getReturns({ pageNumber: 1, pageSize: 1000 } as any));
-    if (!expenses?.length) dispatch(getExpenses({ pageNumber: 1, pageSize: 1000 } as any)); // ⬅️ NEW
+    if (!orders.length) dispatch(getOrders({ pageNumber: 1, pageSize: 10 } as any));
+    if (!inventories.length) dispatch(getInventories({ pageNumber: 1, pageSize: 10 } as any));
+    if (!returns.length) dispatch(getReturns({ pageNumber: 1, pageSize: 10 } as any));
+    if (!expenses?.length) dispatch(getExpenses({ pageNumber: 1, pageSize: 10 } as any));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Completed orders only
@@ -184,18 +204,13 @@ const SalesAndProfit: React.FC = () => {
     const today = startOfToday();
     const now = new Date();
 
-    let cashT = 0,
-      cashM = 0,
-      cashY = 0;
-    let profT = 0,
-      profM = 0,
-      profY = 0;
+    let cashT = 0, cashM = 0, cashY = 0;
+    let profT = 0, profM = 0, profY = 0;
 
     for (const r of returns || []) {
       const d = toDate((r as any).createdAt);
       const cash = Number((r as any).returnAmount || 0);
 
-      // estimate "profit given back" using WAC on returned quantities
       const lines = ((r as any).ReturnOrderProduct || []) as AppReturnOrderProduct[];
       const rev = lines.reduce((s, l) => s + Number(l.sellPrice || 0) * Number(l.quantity || 0), 0);
       const cost = lines.reduce((s, l) => {
@@ -238,13 +253,11 @@ const SalesAndProfit: React.FC = () => {
   const MonthlyTotalProfit = Math.max(0, gross.month.profit - monthlyReturnProfit);
   const YearlyTotalProfit = Math.max(0, gross.year.profit - yearlyReturnProfit);
 
-  /* ---------------- Expenses KPI (today / month / year) ---------------- */
+  // Expenses KPI
   const { todayExp, monthExp, yearExp } = useMemo(() => {
     const today = startOfToday();
     const now = new Date();
-    let t = 0,
-      m = 0,
-      y = 0;
+    let t = 0, m = 0, y = 0;
 
     for (const e of expenses || []) {
       const d = toDate((e as any).createdAt);
@@ -259,45 +272,64 @@ const SalesAndProfit: React.FC = () => {
 
   return (
     <>
+      {/* Header with Refresh (mirrors Orders pattern) */}
+      <Flex mb={5} w="100%" align="center" justify="space-between">
+        <Box>
+          <Heading fontFamily="poppins" fontSize="3xl" fontWeight="bold">Dashboard</Heading>
+          <Text>Overview of sales and profit</Text>
+        </Box>
+        <HStack gap={3}>
+          {anyLoading && (
+            <HStack gap={2}>
+              <Spinner size="sm" />
+              <Text fontSize="sm" color="gray.600">Refreshing…</Text>
+            </HStack>
+          )}
+          <Text fontSize="sm" color="gray.500">Last refresh: {fmtTime(lastRefreshedAt)}</Text>
+          {anyLoading ? (
+            <InlineSpinner />
+          ) : (
+            <IconButton
+              aria-label="refresh-dashboard"
+              variant="subtle"
+              onClick={refreshAll}
+            >
+              <IoMdRefresh />
+            </IconButton>
+          )}
+        </HStack>
+      </Flex>
 
-      {/* ===== Existing Sales/Profit/Returns/expenses/Total grids ===== */}
+      {/* KPI Grids */}
       <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={6} w="full">
         <VStack w="full" align="stretch" gap={4}>
-          <Text fontWeight="bold" textAlign="center" fontSize="30px">
-            Today's
-          </Text>
+          <Text fontWeight="bold" textAlign="center" fontSize="30px">Today's</Text>
           <StatCard title="Today's Sales" value={gross.today.sales} icon={FaDollarSign} color="blue.600" />
           <StatCard title="Today's Profit" value={gross.today.profit} icon={BiTrendingUp} color="green.600" />
           <StatCard title="Today's Returned Sales (Cash)" value={todaysReturns} icon={LuRotateCcw} color="red.600" />
           <StatCard title="Today's Total Sales" value={TodayTotalSales} icon={FaCalculator} color="purple.600" />
           <StatCard title="Today's Total Profit" value={TodayTotalProfit} icon={FaCalculator} color="orange.600" />
-           <StatCard title="Today's Expenses"  value={todayExp} icon={LuReceiptText} color="pink.600" />
+          <StatCard title="Today's Expenses" value={todayExp} icon={LuReceiptText} color="pink.600" />
         </VStack>
 
         <VStack w="full" align="stretch" gap={4}>
-          <Text fontWeight="bold" textAlign="center" fontSize="30px">
-            Monthly
-          </Text>
+          <Text fontWeight="bold" textAlign="center" fontSize="30px">Monthly</Text>
           <StatCard title="Monthly Sales" value={gross.month.sales} icon={FaDollarSign} color="blue.600" />
           <StatCard title="Monthly Profit" value={gross.month.profit} icon={BiTrendingUp} color="green.600" />
           <StatCard title="Monthly Returned Sales (Cash)" value={monthlyReturns} icon={LuRotateCcw} color="red.600" />
           <StatCard title="Monthly Total Sales" value={MonthlyTotalSales} icon={FaCalculator} color="purple.600" />
           <StatCard title="Monthly Total Profit" value={MonthlyTotalProfit} icon={FaCalculator} color="orange.600" />
           <StatCard title="Monthly Expenses" value={monthExp} icon={LuReceiptText} color="pink.600" />
-
         </VStack>
 
         <VStack w="full" align="stretch" gap={4}>
-          <Text fontWeight="bold" textAlign="center" fontSize="30px">
-            Yearly
-          </Text>
+          <Text fontWeight="bold" textAlign="center" fontSize="30px">Yearly</Text>
           <StatCard title="Yearly Sales" value={gross.year.sales} icon={FaDollarSign} color="blue.600" />
           <StatCard title="Yearly Profit" value={gross.year.profit} icon={BiTrendingUp} color="green.600" />
           <StatCard title="Yearly Returned Sales (Cash)" value={yearlyReturns} icon={LuRotateCcw} color="red.600" />
           <StatCard title="Yearly Total Sales" value={YearlyTotalSales} icon={FaCalculator} color="purple.600" />
           <StatCard title="Yearly Total Profit" value={YearlyTotalProfit} icon={FaCalculator} color="orange.600" />
-          <StatCard title="Yearly Expenses"  value={yearExp} icon={LuReceiptText} color="pink.600" />
-
+          <StatCard title="Yearly Expenses" value={yearExp} icon={LuReceiptText} color="pink.600" />
         </VStack>
       </Grid>
     </>

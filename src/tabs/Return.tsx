@@ -150,7 +150,7 @@ export default function ReturnPage() {
     <Flex p={{ base: 4, lg: 6 }} gap={{ base: 4, lg: 6 }} direction={{ base: "column", lg: "row" }} h="full">
       {/* Left: Product search */}
       <Box flex="1">
-        <Heading size="lg" mb={1}>Create Return</Heading>
+        <Heading fontFamily="poppins" fontSize="3xl" fontWeight="bold">Return</Heading>
         <Text color="gray.500" mb={4}>
           Select products and quantities to add back into inventory
         </Text>
