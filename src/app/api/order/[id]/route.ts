@@ -11,7 +11,7 @@ export interface OrderGetOutput {
 }
 
 const UpdateOrderSchema = yup.object({
-  id: yup.number().required(),
+  id: yup.string().required(),
   description: yup.string().nullable(),
   discount: yup.number().required(),
   status: yup.mixed<Status>(),
@@ -29,10 +29,11 @@ export interface OrderDeleteOutput {
 // -------------------------
 // GET: Get order by ID
 // -------------------------
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const item = await prisma.order.findUnique({
-      where: { id: (params.id) },
+      where: { id: (id) },
       include: {
         ProductInOrder: {
           include: {
@@ -67,12 +68,12 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 // -------------------------
 // POST: Update order by ID
 // -------------------------
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id: orderId } = params;
+    const { id: orderId } = await params;
 
     const data = UpdateOrderSchema.validateSync(
-      { ...(await req.json()), id: Number(orderId) },
+      { ...(await req.json()), id: orderId },
       { stripUnknown: true, abortEarly: false }
     );
 
@@ -123,10 +124,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 // -------------------------
 // DELETE: Delete order by ID
 // -------------------------
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const order = await prisma.order.delete({
-      where: { id: (params.id) },
+      where: { id: (id) },
     });
 
     return NextResponse.json({ data: order } as OrderDeleteOutput, { status: 200 });

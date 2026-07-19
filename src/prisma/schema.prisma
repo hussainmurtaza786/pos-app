@@ -18,13 +18,20 @@ datasource db {
 //////////////////////////////////////////////////
 
 model User {
-  id        String    @id @default(cuid())
-  email     String?   @unique
-  phone     String?   @unique
-  password  String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime? @updatedAt
-  userRole  UserRole  @default(Staff)
+  id          String    @id @default(cuid())
+  email       String?   @unique
+  phone       String?   @unique
+  password    String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime? @updatedAt
+  userRole    UserRole  @default(Staff)
+
+  isActive    Boolean   @default(true)
+  banType     BanType?
+  banReason   String?
+  bannedAt    DateTime?
+  bannedBy    String?
+  lastLoginAt DateTime?
 
   inventories Inventory[]
   orders      Order[]
@@ -169,6 +176,11 @@ model Category {
 enum UserRole {
   Admin
   Staff
+}
+
+enum BanType {
+  Temporary
+  Permanent
 }
 
 enum Status {

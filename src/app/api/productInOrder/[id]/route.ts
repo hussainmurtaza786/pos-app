@@ -1,24 +1,19 @@
 import prisma from '@/prisma/client';
 import { ProductInOrder } from '@/prisma/customTypes';
-
-
 import { NextRequest, NextResponse } from 'next/server';
 import * as yup from 'yup';
 
-// -------------------------
-// Types
-// -------------------------
 export interface ProductInOrderGetOutput {
   data: ProductInOrder;
 }
 
 const UpdateProductInOrderSchema = yup.object({
   id: yup.object({
-    orderId: yup.number().required(),
+    orderId: yup.string().required(),
     productId: yup.string().required(),
   }),
-  inventoryId: yup.string().nullable(),
-  returnOrderId: yup.number().nullable(),
+  inventoryId: yup.string().nullable().defined(),
+  returnOrderId: yup.string().nullable().defined(),
   quantity: yup.number().required(),
   sellPrice: yup.number().required(),
 });
@@ -33,24 +28,16 @@ export interface ProductInOrderDeleteOutput {
   data: ProductInOrder;
 }
 
-// -------------------------
-// GET: Get ProductInOrder by (orderId, productId)
-// -------------------------
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // id format: "orderId-productId"
-    const [orderIdStr, productId] = params.id.split("-");
-    const orderId = parseInt(orderIdStr);
+    const { id } = await params;
+    const dashIndex = id.indexOf('-pro-');
+    const orderId = id.substring(0, dashIndex);
+    const productId = id.substring(dashIndex + 1);
 
     const item = await prisma.productInOrder.findUnique({
-      where: {
-        orderId_productId: { orderId, productId },
-      },
-      include: {
-        product: true,
-        inventory: true,
-        order: true,
-      },
+      where: { orderId_productId: { orderId, productId } },
+      include: { product: true, inventory: true, order: true },
     });
 
     if (!item) {
@@ -63,13 +50,12 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   }
 }
 
-// -------------------------
-// POST: Update ProductInOrder by composite key
-// -------------------------
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const [orderIdStr, productId] = params.id.split("-");
-    const orderId = parseInt(orderIdStr);
+    const { id } = await params;
+    const dashIndex = id.indexOf('-pro-');
+    const orderId = id.substring(0, dashIndex);
+    const productId = id.substring(dashIndex + 1);
 
     const { inventoryId, returnOrderId, quantity, sellPrice } =
       UpdateProductInOrderSchema.validateSync(
@@ -87,11 +73,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const updated = await prisma.productInOrder.update({
       where: { orderId_productId: { orderId, productId } },
-      data: {
-        inventoryId,
-        quantity,
-        sellPrice,
-      },
+      data: { inventoryId, quantity, sellPrice },
     });
 
     return NextResponse.json({ data: updated } as ProductInOrderPostOutput, { status: 200 });
@@ -103,13 +85,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 }
 
-// -------------------------
-// DELETE: Delete ProductInOrder by composite key
-// -------------------------
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const [orderIdStr, productId] = params.id.split("-");
-    const orderId = parseInt(orderIdStr);
+    const { id } = await params;
+    const dashIndex = id.indexOf('-pro-');
+    const orderId = id.substring(0, dashIndex);
+    const productId = id.substring(dashIndex + 1);
 
     const deleted = await prisma.productInOrder.delete({
       where: { orderId_productId: { orderId, productId } },

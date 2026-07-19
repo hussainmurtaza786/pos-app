@@ -51,13 +51,13 @@ type ProductInOrder = {
 };
 
 type Order = {
-  id: number;
+  id: string;
   description?: string | null;
   discount: number;
   amountReceived: number;
   status?: Status | null;
-  createdAt: string; // ISO
-  ProductInOrder: ProductInOrder[];
+  createdAt: Date | string;
+  ProductInOrder?: ProductInOrder[];
 };
 
 type Inventory = {
@@ -73,8 +73,8 @@ type ReturnOrderProduct = {
   sellPrice: number;
 };
 type ReturnOrder = {
-  id: number;
-  createdAt: string; // ISO
+  id: string;
+  createdAt: Date | string;
   ReturnOrderProduct: ReturnOrderProduct[];
 };
 
@@ -82,8 +82,9 @@ type ReturnOrder = {
    Redux
 ------------------------------ */
 import { useAppDispatch, useAppSelector } from '@/redux/store';
-import { getOrders } from '@/redux/slices/app/orderApiThunks';
-import { getInventories } from '@/redux/slices/app/inventoryApiThunks'; // you already use this on Inventory tab
+import { getOrders } from '@/redux/slices/app/orderApiThunk';
+import { getInventories } from '@/redux/slices/app/inventoryApiThunks';
+import { getReturns } from '@/redux/slices/app/returnApiThunk';
 
 /* -----------------------------
    UI atoms (no Stat, no StatNumber)
@@ -144,22 +145,17 @@ const StatCard: React.FC<{
    KPI math using Orders + Inventory (COGS)
 ------------------------------ */
 
-function useKpis(orders: Order[], inventories: Inventory[], returns: ReturnOrder[]) {
+function kpis(orders: Order[], inventories: Inventory[], returns: ReturnOrder[]) {
   const today = startOfToday();
   const now = new Date();
 
-  // Map inventoryId -> purchasePrice for quick COGS lookup
-  const invPriceById = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const inv of inventories || []) {
-      if (inv?.id) m.set(inv.id, Number(inv.purchasePrice || 0));
-    }
-    return m;
-  }, [inventories]);
+  const invPriceById = new Map<string, number>();
+  for (const inv of inventories || []) {
+    if (inv?.id) invPriceById.set(inv.id, Number(inv.purchasePrice || 0));
+  }
 
-  // helpers per-order
   const orderLineTotals = (o: Order) =>
-    o.ProductInOrder.reduce(
+    (o.ProductInOrder ?? []).reduce(
       (acc, l) => {
         const lineRevenue = Number(l.sellPrice || 0) * Number(l.quantity || 0);
         const unitCost =
@@ -217,12 +213,10 @@ function useKpis(orders: Order[], inventories: Inventory[], returns: ReturnOrder
     if (d.getFullYear() === now.getFullYear()) apply('year');
   }
 
-  // Returns revenue impact
   const todaysReturns = returnsAmountByRange('today');
   const monthlyReturns = returnsAmountByRange('month');
   const yearlyReturns = returnsAmountByRange('year');
 
-  // Returns profit impact: estimate using monthly margin if we lack return COGS
   const monthlyMargin =
     base.month.sales > 0 ? base.month.profit / base.month.sales : 0;
   const todaysReturnsProfit = todaysReturns * monthlyMargin;
@@ -255,10 +249,9 @@ const Dashboard: React.FC = () => {
   const dispatch = useAppDispatch();
 
   // pull from your existing slices
-  const ordersState = useAppSelector((s) => s.app.orders);
+  const ordersState = useAppSelector((s) => s.app.order);
   const inventoriesState = useAppSelector((s) => s.app.inventory);
-  // If you have a returns slice, expose items here; otherwise stays empty.
-  const maybeReturnsState = useAppSelector((s) => (s as any).app?.returns ?? (s as any).app?.returnOrders);
+  const maybeReturnsState = useAppSelector((s) => s.app.return);
 
   const orders: Order[] = ordersState?.items ?? [];
   const inventories: Inventory[] = inventoriesState?.items ?? [];
@@ -266,19 +259,19 @@ const Dashboard: React.FC = () => {
 
   // fetch if empty
   useEffect(() => {
-    // Load a big enough page to cover the current month and some history
     if (!orders?.length) {
       dispatch(getOrders({ pageNumber: 1, pageSize: 1000 } as any));
     }
     if (!inventories?.length) {
       dispatch(getInventories({ pageNumber: 1, pageSize: 1000 } as any));
     }
-    // For returns: uncomment when you share the thunk name
-    // if (!returns?.length) dispatch(getReturnOrders({ pageNumber: 1, pageSize: 1000 }));
+    if (!returns?.length) {
+      dispatch(getReturns({ pageNumber: 1, pageSize: 1000 } as any));
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stats = useMemo(
-    () => useKpis(orders, inventories, returns),
+    () => kpis(orders, inventories, returns),
     [orders, inventories, returns]
   );
 

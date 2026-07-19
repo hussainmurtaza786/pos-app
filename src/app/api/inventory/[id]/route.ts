@@ -12,8 +12,8 @@ export interface InventoryGetOutput {
 const UpdateInventorySchema = yup.object({
   id: yup.string().required(),
   productId: yup.string().required(),
-  quantity: yup.number().required(),
-  purchasePrice: yup.number().required(),
+  quantity: yup.number().required().min(1, "Quantity must be at least 1"),
+  purchasePrice: yup.number().required().min(0, "Purchase price cannot be negative"),
 })
 
 export type InventoryPostInput = yup.InferType<typeof UpdateInventorySchema>;
@@ -29,10 +29,11 @@ export interface InventoryDeleteOutput {
 // -------------------------
 // GET: Get inventory by ID
 // -------------------------
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const item = await prisma.inventory.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         product: true,
         createdBy: {
@@ -58,7 +59,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 // -------------------------
 // POST: Update inventory by ID
 // -------------------------
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // const user = await verifyAuthorization(req.headers, ['Admin', 'Staff']);
     const { id: inventoryId } = await params;
@@ -72,12 +73,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return Response.json({ error: "Inventory not found" }, { status: 404 });
     }
     const qtyDiff = quantity - existingInventory.purchasedQuantity;
+    const newAvailable = Math.max(0, existingInventory.availableQuantity + qtyDiff);
 
     const updated = await prisma.inventory.update({
       where: { id: inventoryId },
       data: {
         productId, purchasePrice,
-        availableQuantity: existingInventory.availableQuantity + qtyDiff,
+        availableQuantity: newAvailable,
         purchasedQuantity: quantity,
       },
     });
@@ -120,14 +122,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 // }
 
 
-export interface InventoryDeleteOutput {
-  data: Inventory
-}
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // const user = await verifyAuthorization<'Admin'>(req.headers, ['Admin']);
     const { id } = await params;
-    console.log("Inventory ID ===>", id);
 
     // if (user.access.Inventory.delete === false) {
     //     return Response.json({ error: "You are not authorized to access this API" }, { status: 403 });
@@ -135,7 +133,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     const inventory: Inventory = await prisma.inventory.delete({ where: { id } });
 
-    return Response.json({ data: inventory } as InventoryDeleteOutput, { status: 201 });
+    return Response.json({ data: inventory } as InventoryDeleteOutput, { status: 200 });
   } catch (error: any) {
     if (error.errors)
       return Response.json({ error: "API input error", message: error.errors[0] }, { status: 400 });

@@ -70,17 +70,28 @@ export async function PUT(req: NextRequest) {
     const returnOrder = await prisma.$transaction(
       async (tx) => {
         // VALIDATION: ensure requested return qty ≤ sold qty
-        // sold qty per product = SUM(purchasedQuantity - availableQuantity)
+        // Count how many of each product have already been returned
+        const existingReturns = await tx.returnOrderProduct.groupBy({
+          by: ['productId'],
+          where: {
+            productId: { in: products.map(p => p.productId) },
+            ReturnOrder: { createdById: user.id },
+          },
+          _sum: { quantity: true },
+        });
+        const returnedByProduct = new Map(
+          existingReturns.map(r => [r.productId, r._sum?.quantity || 0])
+        );
+
         for (const line of products) {
           const invRows = await tx.inventory.findMany({
             where: { createdById: user.id, productId: line.productId },
             select: { purchasedQuantity: true, availableQuantity: true },
           });
 
-          const sold = invRows.reduce(
-            (s, r) => s + (r.purchasedQuantity - r.availableQuantity),
-            0
-          );
+          const totalPurchased = invRows.reduce((s, r) => s + r.purchasedQuantity, 0);
+          const alreadyReturned = returnedByProduct.get(line.productId) || 0;
+          const sold = totalPurchased - alreadyReturned;
 
           if (line.quantity > sold) {
             throw new Error(
@@ -184,7 +195,7 @@ export async function GET(req: NextRequest) {
 
     const where: Record<string, any> = { createdById: user.id };
     if (search && searchField === "id") {
-      where["id"] = { equals: Number(search.trim()) };
+      where["id"] = { equals: search.trim() };
     } else if (search) {
       where[searchField] = { contains: search.trim(), mode: "insensitive" };
     }

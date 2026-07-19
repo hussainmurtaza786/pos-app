@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { Box, Button, Dialog, IconButton, Portal, SkeletonText, Text } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
 import { MdDelete } from "react-icons/md";
-import { spinner } from "../inventoryTab/components";
+import { CgSpinnerTwoAlt } from "react-icons/cg";
 import { CloseButton } from "@/components/ui/close-button";
 import { Expense } from "@prisma/client";
 import Form from "@/components/Form";
@@ -94,7 +94,7 @@ export function AddUpdateExpenseForm({ initialValues, type = "Add" }: AddUpdateF
                                 enableReinitialize
                                 onSubmit={handleSubmit}
                                 fields={[
-                                    { type: "text", name: "amount", label: "Amount", fieldArea: 12, notRequired: true },
+                                    { type: "number", name: "amount", label: "Amount", fieldArea: 12, notRequired: true },
                                     { type: "text", name: "reason", label: "Reason", fieldArea: 12, notRequired: true },
                                     // category handled above
                                     // { type: "number", name: "price", label: "Price", fieldArea: 12, notRequired: true },
@@ -136,7 +136,6 @@ export function DeleteExpenseHandlerButton({ expenseId }: { expenseId: string })
             });
 
         } catch (error: any) {
-            console.log(error)
             toaster.create({
                 title: "Unable To Delete Expense",
                 description: error.message,
@@ -146,7 +145,7 @@ export function DeleteExpenseHandlerButton({ expenseId }: { expenseId: string })
         setLoading(false);
     }
     return (
-        loading ? spinner :
+        loading ? <CgSpinnerTwoAlt className="animate-spin" size={20} /> :
             <IconButton onClick={handleDelete} aria-label='delete-expense-btn' variant='surface'>
                 <MdDelete size="20" />
             </IconButton>
@@ -183,7 +182,7 @@ export function ViewExpense({ expenseId }: { expenseId: string }) {
                         </Dialog.CloseTrigger>
                         {_expense ?
 
-                            <Dialog.Content p='3'>
+                            <Dialog.Body p='3'>
                                 {/* {_expense.media?.map(media => (
                                     <Box key={media.id} boxSize='100px' bgImg={`url(${media.url})`} bgSize='cover' bgPos='center' />
                                 ))} */}
@@ -217,7 +216,7 @@ export function ViewExpense({ expenseId }: { expenseId: string }) {
                                     </Text>
 
                                 </Box>
-                            </Dialog.Content> :
+                            </Dialog.Body> :
 
                             <Dialog.Body p='3'>
                                 <SkeletonText noOfLines={5} gap="4" />

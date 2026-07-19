@@ -27,11 +27,11 @@ export interface LoginOutput {
 interface UserJWT {
   id: string;
   email: string | null;
-  type: 'Staff';
+  type: 'Admin' | 'Staff';
 }
 
 // ==========================
-// 🔐 POST - Login Handler
+// POST - Login Handler
 // ==========================
 export async function POST(req: NextRequest) {
   try {
@@ -42,7 +42,6 @@ export async function POST(req: NextRequest) {
       abortEarly: false,
     });
 
-    // ✅ Find user by email or phone
     const userDetails = await prisma.user.findFirst({
       where: {
         OR: [
@@ -61,10 +60,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
     }
 
+    if (!userDetails.isActive) {
+      return NextResponse.json(
+        {
+          error: 'Account suspended',
+          details: userDetails.banReason || 'Your account has been temporarily or permanently suspended. Contact admin.',
+          banType: userDetails.banType,
+        },
+        { status: 403 }
+      );
+    }
+
+    await prisma.user.update({
+      where: { id: userDetails.id },
+      data: { lastLoginAt: new Date() },
+    });
+
     const payload: UserJWT = {
       id: userDetails.id,
       email: userDetails.email,
-      type: 'Staff',
+      type: userDetails.userRole as 'Admin' | 'Staff',
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET!, {
@@ -83,7 +98,6 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
   } catch (error: any) {
-    console.error('Login error:', error);
     return NextResponse.json(
       { error: 'Login failed', details: error?.errors || error.message },
       { status: 400 }
@@ -92,6 +106,9 @@ export async function POST(req: NextRequest) {
 }
 
 
+// ==========================
+// PUT - Register Handler
+// ==========================
 export async function PUT(req: NextRequest) {
   try {
     const { email, password } = await req.json();
@@ -103,7 +120,6 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // ✅ Check for existing user
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return NextResponse.json(
@@ -112,15 +128,13 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // ✅ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ Create user (default role: Staff)
     const createdUser = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
-        userRole: 'Staff', // 👈 Use default enum value if not passed
+        userRole: 'Staff',
       },
     });
 
@@ -136,7 +150,6 @@ export async function PUT(req: NextRequest) {
       { status: 201 }
     );
   } catch (err: any) {
-    console.error('Error creating user:', err);
     return NextResponse.json(
       { error: 'Failed to create user', details: err.message },
       { status: 500 }

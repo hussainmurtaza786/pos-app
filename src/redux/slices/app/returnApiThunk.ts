@@ -44,7 +44,7 @@ export const addReturn = createAsyncThunk(
 // -------------------------
 export const deleteReturnById = createAsyncThunk(
     "adminApp/deleteReturnById",
-    async (orderId: number, thunkAPI) => {
+    async (orderId: string, thunkAPI) => {
         try {
             const response = await authorizedApiClient.delete<ReturnDeleteOutput>(
                 `/api/return/${orderId}`
@@ -61,7 +61,7 @@ export const deleteReturnById = createAsyncThunk(
 // -------------------------
 export const getReturnById = createAsyncThunk(
     "adminApp/getReturnById",
-    async (orderId: number, thunkAPI) => {
+    async (orderId: string, thunkAPI) => {
         try {
             const response = await authorizedApiClient.get<ReturnGetOutput>(
                 `/api/return/${orderId}`

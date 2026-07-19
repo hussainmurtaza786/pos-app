@@ -174,19 +174,19 @@ const SalesAndProfit: React.FC = () => {
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
 
   const refreshAll = () => {
-    dispatch(getOrders({ pageNumber: 1, pageSize: 10 } as any));
-    dispatch(getInventories({ pageNumber: 1, pageSize: 10 } as any));
-    dispatch(getReturns({ pageNumber: 1, pageSize: 10 } as any));
-    dispatch(getExpenses({ pageNumber: 1, pageSize: 10 } as any));
+    dispatch(getOrders({ pageNumber: 1, pageSize: 1000 } as any));
+    dispatch(getInventories({ pageNumber: 1, pageSize: 1000 } as any));
+    dispatch(getReturns({ pageNumber: 1, pageSize: 1000 } as any));
+    dispatch(getExpenses({ pageNumber: 1, pageSize: 1000 } as any));
     setLastRefreshedAt(new Date());
   };
 
   // initial fetch (first mount)
   useEffect(() => {
-    if (!orders.length) dispatch(getOrders({ pageNumber: 1, pageSize: 10 } as any));
-    if (!inventories.length) dispatch(getInventories({ pageNumber: 1, pageSize: 10 } as any));
-    if (!returns.length) dispatch(getReturns({ pageNumber: 1, pageSize: 10 } as any));
-    if (!expenses?.length) dispatch(getExpenses({ pageNumber: 1, pageSize: 10 } as any));
+    if (!orders.length) dispatch(getOrders({ pageNumber: 1, pageSize: 1000 } as any));
+    if (!inventories.length) dispatch(getInventories({ pageNumber: 1, pageSize: 1000 } as any));
+    if (!returns.length) dispatch(getReturns({ pageNumber: 1, pageSize: 1000 } as any));
+    if (!expenses?.length) dispatch(getExpenses({ pageNumber: 1, pageSize: 1000 } as any));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Completed orders only
@@ -244,15 +244,6 @@ const SalesAndProfit: React.FC = () => {
     };
   }, [returns, wacByProduct]);
 
-  // Totals after subtracting returns
-  const TodayTotalSales = Math.max(0, gross.today.sales - todaysReturns);
-  const MonthlyTotalSales = Math.max(0, gross.month.sales - monthlyReturns);
-  const YearlyTotalSales = Math.max(0, gross.year.sales - yearlyReturns);
-
-  const TodayTotalProfit = Math.max(0, gross.today.profit - todaysReturnProfit);
-  const MonthlyTotalProfit = Math.max(0, gross.month.profit - monthlyReturnProfit);
-  const YearlyTotalProfit = Math.max(0, gross.year.profit - yearlyReturnProfit);
-
   // Expenses KPI
   const { todayExp, monthExp, yearExp } = useMemo(() => {
     const today = startOfToday();
@@ -269,6 +260,15 @@ const SalesAndProfit: React.FC = () => {
 
     return { todayExp: t, monthExp: m, yearExp: y };
   }, [expenses]);
+
+  // Totals after subtracting returns and expenses
+  const TodayTotalSales = gross.today.sales - todaysReturns;
+  const MonthlyTotalSales = gross.month.sales - monthlyReturns;
+  const YearlyTotalSales = gross.year.sales - yearlyReturns;
+
+  const TodayTotalProfit = gross.today.profit - todaysReturnProfit - todayExp;
+  const MonthlyTotalProfit = gross.month.profit - monthlyReturnProfit - monthExp;
+  const YearlyTotalProfit = gross.year.profit - yearlyReturnProfit - yearExp;
 
   return (
     <>

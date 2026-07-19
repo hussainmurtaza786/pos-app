@@ -4,7 +4,7 @@ import { addProduct, deleteProductById, getProductById, getProducts, updateProdu
 
 import { Inventory, Order, Product, ProductInOrder, ReturnOrder } from '@/prisma/customTypes';
 import { Category, Expense } from '@prisma/client';
-import { addCategory, getCategories } from './categoryApiThunks ';
+import { addCategory, getCategories } from './categoryApiThunks';
 import { ProductsGetInput } from '@/app/api/product/route';
 import { InventoriesGetInput } from '@/app/api/inventory/route';
 import { OrdersGetInput } from '@/app/api/order/route';

@@ -25,8 +25,6 @@ const OrdersTable: React.FC = () => {
     (state: RootState) => state.app.fetchingStatus.getOrders
   );
 
-  console.log('Orders state:', { items, count, loading });
-
   // Fetch on mount & page change
   useEffect(() => {
     dispatch(getOrders({ pageNumber, pageSize }));

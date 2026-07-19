@@ -57,8 +57,7 @@ export default function SearchProduct({ onSelect, onRemove, onAddToCart }: Props
             }));
             callback(data);
           })
-          .catch(e => {
-            console.log("error in search", e?.response?.data || e?.message);
+          .catch(() => {
             callback([]);
           });
       }}

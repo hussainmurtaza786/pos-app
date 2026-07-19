@@ -113,5 +113,7 @@ export class JWT {
 
 
 export function generateUniqueNumber() {
-    return Math.floor(10000000 + Math.random() * 90000000)
+    const array = new Uint8Array(8);
+    crypto.getRandomValues(array);
+    return Number(Array.from(array).map(b => b.toString().padStart(2, '0')).join('').slice(0, 8));
 }

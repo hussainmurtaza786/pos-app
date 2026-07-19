@@ -12,7 +12,7 @@ export interface ReturnGetOutput {
 }
 
 const UpdateReturnSchema = yup.object({
-  id: yup.number().required(),
+  id: yup.string().required(),
   description: yup.string().nullable(),
 });
 export type ReturnPostInput = yup.InferType<typeof UpdateReturnSchema>;
@@ -27,10 +27,11 @@ export interface ReturnDeleteOutput {
 // -------------------------
 // GET: Get return order by ID
 // -------------------------
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const item = await prisma.returnOrder.findUnique({
-      where: { id: (params.id) }, // now using ReturnOrder.id
+      where: { id: (id) }, // now using ReturnOrder.id
       include: {
         ReturnOrderProduct: {
           include: {
@@ -63,12 +64,12 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 // -------------------------
 // POST: Update return order by ID
 // -------------------------
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const data = UpdateReturnSchema.validateSync(
-      { ...(await req.json()), id: Number(id) },
+      { ...(await req.json()), id },
       { stripUnknown: true, abortEarly: false }
     );
 
@@ -112,10 +113,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 // -------------------------
 // DELETE: Delete return order by ID
 // -------------------------
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const returnOrder = await prisma.returnOrder.delete({
-      where: { id: (params.id) }, // using id now
+      where: { id: (id) }, // using id now
     });
 
     return NextResponse.json({ data: returnOrder } as ReturnDeleteOutput, { status: 200 });

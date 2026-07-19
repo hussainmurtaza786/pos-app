@@ -32,10 +32,11 @@ export interface ProductDeleteOutput {
 // -------------------------
 // GET: Get product by ID
 // -------------------------
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const item = await prisma.product.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         createdBy: {
           select: {
@@ -61,21 +62,22 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 // -------------------------
 // POST: Update product
 // -------------------------
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const input = UpdateProductSchema.validateSync(await req.json(), {
       abortEarly: false,
       stripUnknown: true,
     });
 
-    const existing = await prisma.product.findUnique({ where: { id: params.id } });
+    const existing = await prisma.product.findUnique({ where: { id } });
 
     if (!existing) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
     const updated = await prisma.product.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name: input.name,
         sku: input.sku,
@@ -98,15 +100,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 // -------------------------
 // DELETE: Delete product
 // -------------------------
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const existing = await prisma.product.findUnique({ where: { id: params.id } });
+    const { id } = await params;
+    const existing = await prisma.product.findUnique({ where: { id } });
 
     if (!existing) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
-    const deleted = await prisma.product.delete({ where: { id: params.id } });
+    const deleted = await prisma.product.delete({ where: { id } });
 
     return NextResponse.json({ data: deleted } as ProductDeleteOutput, { status: 200 });
 

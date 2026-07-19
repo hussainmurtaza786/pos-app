@@ -62,25 +62,39 @@ export async function PUT(req: NextRequest) {
           select: { id: true, productId: true, availableQuantity: true },
         });
 
-        const byProduct = new Map(inventories.map((i) => [i.productId, i]));
+        const byProduct = new Map<string, typeof inventories>();
+        for (const inv of inventories) {
+          const existing = byProduct.get(inv.productId) || [];
+          existing.push(inv);
+          byProduct.set(inv.productId, existing);
+        }
 
-        // validate availability
+        // validate availability — sum all batches per product
         for (const line of products) {
-          const inv = byProduct.get(line.productId);
-          if (!inv || inv.availableQuantity < line.quantity) {
+          const batches = byProduct.get(line.productId) || [];
+          const totalAvailable = batches.reduce((sum, b) => sum + b.availableQuantity, 0);
+          if (totalAvailable < line.quantity) {
             throw new Error(
-              `OUT_OF_STOCK:${line.productId}:${inv?.availableQuantity ?? 0}:${line.quantity}`
+              `OUT_OF_STOCK:${line.productId}:${totalAvailable}:${line.quantity}`
             );
           }
         }
 
-        // deduct stock
+        // deduct stock — use batches in order (FIFO)
         for (const line of products) {
-          const inv = byProduct.get(line.productId)!;
-          await tx.inventory.update({
-            where: { id: inv.id },
-            data: { availableQuantity: { decrement: line.quantity } },
-          });
+          const batches = byProduct.get(line.productId) || [];
+          let remaining = line.quantity;
+          for (const batch of batches) {
+            if (remaining <= 0) break;
+            const deduct = Math.min(batch.availableQuantity, remaining);
+            if (deduct > 0) {
+              await tx.inventory.update({
+                where: { id: batch.id },
+                data: { availableQuantity: { decrement: deduct } },
+              });
+              remaining -= deduct;
+            }
+          }
         }
 
         // create order + items
@@ -166,7 +180,7 @@ export async function GET(req: NextRequest) {
 
     const where: Record<string, any> = { createdById: user.id };
 
-    if (search && searchField === "id") where[searchField] = { equals: Number(search.trim()) };
+    if (search && searchField === "id") where[searchField] = { equals: search.trim() };
     else if (search) where[searchField] = { contains: search.trim(), mode: "insensitive" };
 
     const [orders, count] = await prisma.$transaction([

@@ -44,7 +44,7 @@ export const addProductInOrder = createAsyncThunk(
 // -------------------------
 export const deleteProductInOrderById = createAsyncThunk(
     "adminApp/deleteProductInOrder",
-    async ({ orderId, productId }: { orderId: number; productId: string }, thunkAPI) => {
+    async ({ orderId, productId }: { orderId: string; productId: string }, thunkAPI) => {
         // compositeId must be in "orderId-productId" format
         try {
             const response = await authorizedApiClient.delete<ProductInOrderDeleteOutput>(
@@ -62,7 +62,7 @@ export const deleteProductInOrderById = createAsyncThunk(
 // -------------------------
 export const getProductInOrderById = createAsyncThunk(
     "adminApp/getProductInOrderById",
-    async ({ orderId, productId }: { orderId: number; productId: string }, thunkAPI) => {
+    async ({ orderId, productId }: { orderId: string; productId: string }, thunkAPI) => {
         try {
             const response = await authorizedApiClient.get<ProductInOrderGetOutput>(
                 `/api/productInOrder/${orderId}-${productId}`

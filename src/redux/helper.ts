@@ -11,11 +11,10 @@ export function handlePending(thunkName: string) {
 
 export function handleReject(thunkName: string) {
     return (state: any, { error, meta: { arg } }: any) => {
-        console.log(`${thunkName}_Error`, error.message);
-        if (state?.fetchingStatus?.[thunkName]) {
+        if (state?.fetchingStatus?.[thunkName] !== undefined) {
             state.fetchingStatus[thunkName] = false;
         }
-        if (state?.error?.[thunkName]) {
+        if (state?.error?.[thunkName] !== undefined) {
             state.error[thunkName] = error.message;
         }
         arg.callback && arg.callback(error.message, null);

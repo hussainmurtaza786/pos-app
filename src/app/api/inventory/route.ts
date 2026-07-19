@@ -11,8 +11,8 @@ import { Inventory } from "@/prisma/customTypes";
 const AddInventorySchema = yup.object({
   productId: yup.string().required(),
   description: yup.string().nullable(),
-  quantity: yup.number().required(),
-  purchasePrice: yup.number().required(),
+  quantity: yup.number().required().min(1, "Quantity must be at least 1"),
+  purchasePrice: yup.number().required().min(0, "Purchase price cannot be negative"),
 });
 export type InventoryPutInput = yup.InferType<typeof AddInventorySchema>;
 

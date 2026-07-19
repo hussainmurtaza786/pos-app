@@ -10,21 +10,17 @@ export default function ProductInOrder() {
     const isFetchingProductInOrders = useAppSelector(s => s.app.fetchingStatus.getProductInOrders);
     const dispatch = useAppDispatch();
 
-    console.log('productInOrders --->', productInOrders);
     // Handlers
     const handlePaginationChange = useCallback(async (pageNumber: number, pageSize: number) => {
         await dispatch(getProductInOrders({ ...input, pageNumber, pageSize })).unwrap();
     }, [dispatch, input]);
-    useEffect(() => {
-        console.log("productInOrders JSON --->", JSON.stringify(productInOrders, null, 2));
-    }, [productInOrders]);
 
     // Initial data fetch
     useEffect(() => {
         if (!productInOrders || !productInOrders.length) {
             dispatch(getProductInOrders(input));
         }
-    }, [dispatch, productInOrders, input]);
+    }, []);
 
     return (
         <Box>

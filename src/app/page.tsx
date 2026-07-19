@@ -1,65 +1,71 @@
 'use client';
-// import { Dashboard } from '@/tabs/Dashboard';
-// import Expenses from '@/tabs/Expenses';
-import { Layout } from '@/tabs/Layout';
-// import { Reports } from '@/tabs/Reports';
-// import Returns from '@/tabs/Return';
-import React, { useState, useEffect } from 'react';
-import Sales from '@/tabs/Sales';
-import { getCookie } from '@/utils';
-import { AUTH_TOKEN_NAME, PAGES } from '@/app-config';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Inventory from '@/tabs/inventoryTab';
-import Product from '@/tabs/productTab';
-import Order from '@/tabs/orderTab';
-import Dashboard from '../tabs/dashboard/index';
-import ReturnPage from '@/tabs/Return';
-import ExpenseTab from '@/tabs/ExpenseTab';
-import Reports from '@/tabs/Reports';
-function App() {
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
+import { getCookie } from '@/utils';
+import { AUTH_TOKEN_NAME } from '@/app-config';
+import Hero from '@/components/landing/Hero';
+import Features from '@/components/landing/Features';
+import Pricing from '@/components/landing/Pricing';
+import Footer from '@/components/landing/Footer';
+import { Box, Flex, Container, Text, Button, Icon, Stack, Heading, Input, HStack, Badge, Avatar, Stat } from '@chakra-ui/react';
+import { IoIosTrendingUp } from 'react-icons/io';
+import Link from 'next/link';
+
+function NavBar() {
+  return (
+    <Box bg="white" borderBottomWidth="1px" borderColor="gray.200" position="sticky" top={0} zIndex={50}>
+      <Container maxW="6xl">
+        <Flex py={4} align="center" justify="space-between">
+          <Link href="/">
+            <Flex align="center" gap={2} cursor="pointer">
+              <Flex p={1.5} bg="blue.600" rounded="lg" align="center" justify="center">
+                <Icon as={IoIosTrendingUp} boxSize={5} color="white" />
+              </Flex>
+              <Text fontSize="xl" fontWeight="bold" color="gray.900">
+                POS System
+              </Text>
+            </Flex>
+          </Link>
+
+          <HStack gap={3}>
+            <Link href="/login">
+              <Button variant="ghost" size="sm" fontWeight="medium">
+                Login
+              </Button>
+            </Link>
+            <Link href="/register">
+              <Button bg="blue.600" px={4} py={2} color="white" size="sm" fontWeight="medium" _hover={{ bg: 'blue.700' }}>
+                Sign Up
+              </Button>
+            </Link>
+          </HStack>
+        </Flex>
+      </Container>
+    </Box>
+  );
+}
+
+export default function LandingPage() {
   const router = useRouter();
 
   useEffect(() => {
     const token = getCookie(AUTH_TOKEN_NAME);
-
-    if (!token) {
-      router.replace(PAGES.Login.path); // Redirect to login
-      return;
+    if (token) {
+      router.replace('/app');
     }
-
-    setLoading(false); // Token exists, allow dashboard
   }, [router]);
 
-  const renderActiveComponent = () => {
-    switch (activeTab) {
-      case 'dashboard': return <Dashboard />;
-      case 'sales': return <Sales />;
-      case 'orders': return <Order />;
-      case 'products': return <Product />;
-      case 'returns': return <ReturnPage />;
-      case 'inventory': return <Inventory />;
-      case 'reports': return <Reports />;
-      case 'expenses': return <ExpenseTab />;
-      default: return <Dashboard />;
-    }
-  };
-
-  if (loading) {
-    // Loader while checking token
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
   return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab} onSignOut={() => router.push(PAGES.Login.path)}>
-      {renderActiveComponent()}
-    </Layout>
+    <Box minH="100vh">
+      <NavBar />
+      <Hero />
+      <div id="features">
+        <Features />
+      </div>
+      <div id="pricing">
+        <Pricing />
+      </div>
+      <Footer />
+    </Box>
   );
 }
-
-export default App;

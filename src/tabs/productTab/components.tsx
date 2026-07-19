@@ -244,7 +244,6 @@ export function DeleteProductHandlerButton({ productId }: { productId: string })
             });
 
         } catch (error: any) {
-            console.log(error)
             toaster.create({
                 title: "Unable To Delete Product",
                 description: error.message,

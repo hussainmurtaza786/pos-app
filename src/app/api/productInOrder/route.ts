@@ -9,7 +9,7 @@ import { verifyAuthorization } from "@/utils";
 // Validation Schemas
 // =====================
 const AddProductInOrderSchema = yup.object({
-  orderId: yup.number().required(),
+  orderId: yup.string().required(),
   productId: yup.string().required(),
   inventoryId: yup.string().nullable(),
   quantity: yup.number().required(),
@@ -98,12 +98,9 @@ export async function GET(req: NextRequest) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // const where: { [k: string]: any } = {};
-    const where: { [k: string]: any } = {
-      createdById: user.id, // 🔑 filter by logged-in user
-    };
+    const where: { [k: string]: any } = {};
     if (search && searchField === "orderId") {
-      where[searchField] = Number(search);
+      where[searchField] = search.trim();
     } else if (search) {
       where[searchField] = { contains: search.trim(), mode: "insensitive" };
     }

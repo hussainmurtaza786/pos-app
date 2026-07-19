@@ -11,7 +11,7 @@ import { loginAction } from './action';
 import { toaster } from '@/components/ui/toaster';
 
 interface LoginFormProps {
-  onLogin: () => void;
+  onLogin?: () => void;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
@@ -21,26 +21,22 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const dispatch = useDispatch();
 
   const handleAction = async (values: any) => {
-    console.log("Formik values:", values);
     setError('');
 
     const { error, data } = await loginAction(values);
-    if (!data?.userDetails.email) {
+    if (error) {
       toaster.create({
         type: "error", title: "Invalid Email or Password",
         description: "Please check your Details and try again",
         closable: true,
       })
-    }
-
-    if (error) {
       setError(error);
       return;
     }
 
     if (data?.token) {
       dispatch(updateAuthData({ authToken: data.token, userDetails: data.userDetails }));
-      router.push(PAGES.Home.path);
+      router.push('/app');
     }
   };
 

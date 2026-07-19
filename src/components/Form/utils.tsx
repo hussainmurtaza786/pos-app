@@ -424,19 +424,30 @@ function replaceNwithValue(str: string, values: (number | string)[]) {
  * 
  * - (callback?: (visible: boolean) => void) This will be called when the condition field will be changed.
  */
+function useConditionalFieldValue(name: string, condition?: FileFieldInterface['condition']) {
+    const numArr = name?.match(/[\d]/g);
+    const condFieldName = condition
+        ? numArr
+            ? replaceNwithValue(condition.fieldName, numArr)
+            : condition.fieldName
+        : '__no_condition__';
+    const [condField] = useField("form." + condFieldName);
+    return { conditionValue: condition?.value, condFieldValue: condField.value };
+}
+
 export function useIsVisible({ name, condition }: { name: string, condition?: FileFieldInterface['condition'] }, callback?: (visible: boolean) => void) {
     const [visible, setVisible] = useState(true);
-    if (condition) {
-        const numArr = name?.match(/[\d]/g);
-        const condFieldName = numArr
-            ? replaceNwithValue(condition.fieldName, numArr)
-            : condition.fieldName;
-        const [condField] = useField("form." + condFieldName);
-        useEffect(() => {
-            const isIncluded = condition.value.includes(condField.value);
-            setVisible(isIncluded);
-            callback?.(isIncluded)
-        }, [condField.value]);
-    }
+    const { conditionValue, condFieldValue } = useConditionalFieldValue(name, condition);
+
+    useEffect(() => {
+        if (!conditionValue) {
+            setVisible(true);
+            return;
+        }
+        const isIncluded = conditionValue.includes(condFieldValue);
+        setVisible(isIncluded);
+        callback?.(isIncluded);
+    }, [conditionValue, condFieldValue]);
+
     return visible;
 }

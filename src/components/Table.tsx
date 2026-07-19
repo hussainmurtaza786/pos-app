@@ -1,5 +1,5 @@
 'use client';
-import { Box, createListCollection, Flex, Icon, Progress, ProgressRootProps, Table, TableRootProps, NativeSelect } from "@chakra-ui/react";
+import { Box, Flex, Icon, Progress, ProgressRootProps, Table, TableRootProps, NativeSelect } from "@chakra-ui/react";
 import { JSX, useEffect, useRef, useState } from "react";
 import { IoChevronBackOutline, IoChevronForwardOutline } from "react-icons/io5";
 import { FaCheck, FaMinus } from "react-icons/fa";
@@ -289,14 +289,6 @@ function Pagination({
         </>
     )
 }
-const frameworks = createListCollection({
-    items: [
-        { label: "React.js", value: "react" },
-        { label: "Vue.js", value: "vue" },
-        { label: "Angular", value: "angular" },
-        { label: "Svelte", value: "svelte" },
-    ],
-})
 
 
 function ProgressHandler(props: ProgressRootProps) {

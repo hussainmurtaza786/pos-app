@@ -92,8 +92,9 @@ export default function Order() {
                   (acc: number, curr: any) => acc + (Number(curr.sellPrice) * Number(curr.quantity)),
                   0
                 );
+                const discount = Number(rowValues?.discount ?? 0);
                 const amountReceived = Number(rowValues?.amountReceived ?? 0);
-                return amountReceived - lineTotal;
+                return Math.max(0, amountReceived - (lineTotal - discount));
               }
             },
             { accessKey: "discount", label: "Discount", align: "left" },
@@ -105,7 +106,7 @@ export default function Order() {
                   0
                 );
                 const discount = Number(rowValues?.discount ?? 0);
-                return lineTotal - discount;
+                return Math.max(0, lineTotal - discount);
               }
             },
             { accessKey: "status", label: "Status", align: "left", format: (val, row) => <StatusBadge status={row.status || ""} /> },

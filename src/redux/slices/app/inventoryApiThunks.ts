@@ -29,18 +29,24 @@ export const getInventories = createAsyncThunk(
   }
 );
 
-// 🔎 Single-product inventory (uses GET /api/inventory?productId=...&pageSize=1)
+// 🔎 Single-product inventory — sum all batches for total availability
 export const getInventoryForProduct = createAsyncThunk(
   "adminApp/getInventoryForProduct",
   async (productId: string, thunkAPI) => {
     try {
       const response = await authorizedApiClient.get<InventoriesGetOutput>(
         `/api/inventory/`,
-        { params: { pageNumber: 1, pageSize: 1, productId }, withCredentials: true }
+        { params: { pageNumber: 1, pageSize: 100, productId }, withCredentials: true }
       );
-      // return only the first row (or null)
-      const item = response.data?.data?.items?.[0] ?? null;
-      return { data: item };
+      const items = response.data?.data?.items ?? [];
+      if (items.length === 0) return { data: null };
+      const totalAvailable = items.reduce((sum, inv) => sum + Number(inv.availableQuantity || 0), 0);
+      const product = items[0]?.product;
+      const aggregated = {
+        ...items[0],
+        availableQuantity: totalAvailable,
+      };
+      return { data: aggregated };
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error?.response?.data || { error: "Request failed" });
     }

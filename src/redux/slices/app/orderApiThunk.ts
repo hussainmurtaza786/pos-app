@@ -10,19 +10,13 @@ export const getOrders = createAsyncThunk(
     "adminApp/getOrders",
     async (params: OrdersGetInput, thunkAPI) => {
         try {
-            console.log("Fetching orders with params:", params);
-
             const response = await authorizedApiClient.get<OrdersGetOutput>(
                 `/api/order/`,
                 { params }
             );
 
-            console.log("Response data:", response.data);
-
-            // unwrap
             return response.data.data;
         } catch (error: any) {
-            console.error("Failed to fetch orders:", error);
             return thunkAPI.rejectWithValue(error.response?.data ?? error.message);
         }
     }
@@ -52,7 +46,7 @@ export const addOrder = createAsyncThunk(
 // -------------------------
 export const deleteOrderById = createAsyncThunk(
     "adminApp/deleteOrderById",
-    async (orderId: number, thunkAPI) => {
+    async (orderId: string, thunkAPI) => {
         try {
             const response = await authorizedApiClient.delete<OrderDeleteOutput>(
                 `/api/order/${orderId}`
@@ -69,7 +63,7 @@ export const deleteOrderById = createAsyncThunk(
 // -------------------------
 export const getOrderById = createAsyncThunk(
     "adminApp/getOrderById",
-    async (orderId: number, thunkAPI) => {
+    async (orderId: string, thunkAPI) => {
         try {
             const response = await authorizedApiClient.get<OrderGetOutput>(
                 `/api/order/${orderId}`

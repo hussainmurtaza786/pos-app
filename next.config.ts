@@ -2,13 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   experimental: {
-    typedRoutes: false, // disable Next.js strict typed routes check
+    typedRoutes: false,
   },
   typescript: {
-    ignoreBuildErrors: true, // skip TypeScript errors at build time
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true, // skip ESLint errors at build time
+    ignoreDuringBuilds: false,
   },
 };
 

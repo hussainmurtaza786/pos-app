@@ -99,7 +99,7 @@ export function StatusBadge({ status }: { status: string }) {
   return <Badge colorPalette="green" variant="subtle">Completed</Badge>;
 }
 
-export function DeleteOrderHandlerButton({ orderId }: { orderId: number }) {
+export function DeleteOrderHandlerButton({ orderId }: { orderId: string }) {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const handleDelete = async () => {
@@ -128,7 +128,7 @@ export function DeleteOrderHandlerButton({ orderId }: { orderId: number }) {
   )
 }
 
-export function ViewOrder({ orderId }: { orderId: number }) {
+export function ViewOrder({ orderId }: { orderId: string }) {
   const dispatch = useAppDispatch();
   const _order = useAppSelector(s => s.app.order.itemFullDataById[orderId] || null);
   const [modalOpenState, setModalOpenState] = useState(false);
@@ -214,7 +214,7 @@ export function ViewOrder({ orderId }: { orderId: number }) {
 /** ---------------- New: ViewReturn modal + types for Return History ---------------- */
 
 export type ReturnRow = {
-  id: number; // Return Id
+  id: string; // Return Id
   createdAt: string; // ISO date
   description?: string;
   products: { name: string; quantity: number; sellPrice: number }[]; // returned lines

@@ -15,9 +15,6 @@ export default function ReturnTable() {
     const isFetchingReturn = useAppSelector((s) => s.app.fetchingStatus.getReturns);
     const { count, input, items: returns } = useAppSelector(s => s.app.return);
 
-    useEffect(() => {
-        console.log({ isFetchingReturn, returns });
-    }, [isFetchingReturn, returns]);
     const [search, setSearch] = useState("");
 
 
@@ -104,7 +101,7 @@ export default function ReturnTable() {
 }
 
 
-export function ViewReturn({ returnId }: { returnId: number }) {
+export function ViewReturn({ returnId }: { returnId: string }) {
     const dispatch = useAppDispatch();
     const _return = useAppSelector(s => s.app.return.itemFullDataById[returnId] || null);
     const [modalOpenState, setModalOpenState] = useState(false);

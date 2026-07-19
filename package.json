@@ -8,6 +8,7 @@
     "start": "next start",
     "prismagen": "prisma generate --schema=src/prisma/schema.prisma",
     "prismapush": "prisma db push --schema=src/prisma/schema.prisma",
+    "prismamigrate": "prisma migrate dev --schema=src/prisma/schema.prisma",
     "lint": "next lint",
     "postinstall": "prisma generate --schema=src/prisma/schema.prisma"
   },

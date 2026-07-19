@@ -27,8 +27,7 @@ export function AddUpdateProductInOrderForm({ initialValues, type = 'Add' }: Add
   const [modalOpenState, setModalOpenState] = useState(false);
   const closeButtonRef = useRef<any>(null);
 
-  const handleSubmit = async (values: any) => {
-    console.log("values ==>", values);
+    const handleSubmit = async (values: any) => {
     const productId = values.product?.id;
     const { product, ...restValues } = values;
 
@@ -143,7 +142,7 @@ export function AddUpdateProductInOrderForm({ initialValues, type = 'Add' }: Add
 // ========================
 // DELETE HANDLER
 // ========================
-export function DeleteProductInOrderHandlerButton({ orderId, productId }: { orderId: number, productId: string }) {
+export function DeleteProductInOrderHandlerButton({ orderId, productId }: { orderId: string, productId: string }) {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
 
@@ -177,7 +176,7 @@ export function DeleteProductInOrderHandlerButton({ orderId, productId }: { orde
 // ========================
 // VIEW HANDLER
 // ========================
-export function ViewProductInOrder({ orderId, productId }: { orderId: number, productId: string }) {
+export function ViewProductInOrder({ orderId, productId }: { orderId: string, productId: string }) {
   const dispatch = useAppDispatch();
   const compositeId = `${orderId}-${productId}`;
   const _pio = useAppSelector(s => s.app.productInOrder.itemFullDataById[compositeId] || null);
@@ -210,10 +209,8 @@ export function ViewProductInOrder({ orderId, productId }: { orderId: number, pr
                   <Text><strong>Order ID:</strong> {_pio.orderId}</Text>
                   <Text><strong>Quantity:</strong> {_pio.quantity}</Text>
                   <Text><strong>Sell Price:</strong> {_pio.sellPrice}</Text>
-                  <Text><strong>Return Order ID:</strong> {_pio.product?.name}</Text>
-                  <Text><strong>Return Order ID:</strong> {_pio.product?.price}</Text>
-                  {/* <Text><strong>Return Order ID:</strong> {_pio..status}</Text> */}
-                  {/* <Text><strong>Return Order ID:</strong> {_pio.order.discount}</Text> */}
+                  <Text><strong>Product Name:</strong> {_pio.product?.name}</Text>
+                  <Text><strong>Product Price:</strong> {_pio.product?.price}</Text>
                 </Box>
               </Dialog.Body>
               :

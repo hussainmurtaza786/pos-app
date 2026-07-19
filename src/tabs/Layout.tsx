@@ -1,16 +1,18 @@
 "use client";
-import React from "react";
+import React, { useMemo } from "react";
 import { Box, Flex, Button, Text, VStack, HStack, Drawer, CloseButton, Portal, } from "@chakra-ui/react";
 import { RxHamburgerMenu } from "react-icons/rx";
 import { logout } from "@/redux/slices/auth";
 import { CiLogout } from "react-icons/ci";
-import { FaChartBar, FaFileInvoice, FaMoneyBillWave } from "react-icons/fa";
+import { FaChartBar, FaFileInvoice, FaMoneyBillWave, FaShieldAlt } from "react-icons/fa";
 import { FiFileText, FiRotateCcw } from "react-icons/fi";
 import { GoPackage } from "react-icons/go";
 import { HiOutlineCube } from "react-icons/hi";
 import { IoIosTrendingUp } from "react-icons/io";
 import { useDispatch } from "react-redux";
 import { AUTH_TOKEN_NAME } from "@/app-config";
+import { getCookie } from "@/utils";
+import Link from "next/link";
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -26,6 +28,17 @@ export const Layout: React.FC<LayoutProps> = ({
     onSignOut,
 }) => {
     const dispatch = useDispatch();
+
+    const isAdmin = useMemo(() => {
+        try {
+            const token = getCookie(AUTH_TOKEN_NAME);
+            if (!token) return false;
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return payload.type === 'Admin' || payload.role === 'Admin';
+        } catch {
+            return false;
+        }
+    }, []);
 
     const handleSignOut = () => {
         document.cookie = `${AUTH_TOKEN_NAME}=; Max-Age=0; path=/;`;
@@ -56,7 +69,6 @@ export const Layout: React.FC<LayoutProps> = ({
             {/* Logo/Header */}
             <Flex
                 p={6}
-                borderBottomWidth="1px"
                 borderColor="gray.200"
                 align="center"
                 gap={3}
@@ -68,7 +80,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     align="center"
                     justify="center"
                 >
-                    <IoIosTrendingUp size={24} color="white" />
+                    <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 512 512" color="white" height="24" width="24" xmlns="http://www.w3.org/2000/svg" style={{ color: 'white' }}><path d="M464.9 128H344.1c-8.3 0-15.1 6.6-15.1 14.8s6.8 14.8 15.1 14.8h83.7l-138 142.2-85.9-84.1c-2.9-2.8-6.6-4.3-10.7-4.3-4 0-7.8 1.5-10.7 4.3L36.2 358.8c-1.9 1.9-4.2 5.2-4.2 10.7 0 4.1 1.4 7.5 4.2 10.2 2.9 2.8 6.6 4.3 10.7 4.3 4 0 7.8-1.5 10.7-4.3L193.2 247l85.9 84.1c2.9 2.8 6.6 4.3 10.7 4.3 4 0 7.8-1.5 10.7-4.3l149.4-151.9v81.7c0 8.1 6.8 14.8 15.1 14.8s15.1-6.6 15.1-14.8V142.8c-.1-8.2-6.9-14.8-15.2-14.8z"></path></svg>
                 </Flex>
                 <Text fontSize="xl" fontWeight="bold" color="gray.900">
                     POS System
@@ -100,6 +112,27 @@ export const Layout: React.FC<LayoutProps> = ({
                         </Button>
                     );
                 })}
+
+                {isAdmin && (
+                    <Link href="/admin">
+                        <Button
+                            w="full"
+                            justifyContent="flex-start"
+                            fontSize="sm"
+                            fontWeight="medium"
+                            mb={1}
+                            mt={4}
+                            pt={4}
+                            borderTopWidth="1px"
+                            borderColor="gray.200"
+                            rounded="lg"
+                            color="purple.600"
+                            _hover={{ bg: "purple.50", color: "purple.700" }}
+                        >
+                            <FaShieldAlt size={18} />&nbsp;Admin Panel
+                        </Button>
+                    </Link>
+                )}
             </Box>
 
             {/* Sign out */}
@@ -142,7 +175,6 @@ export const Layout: React.FC<LayoutProps> = ({
                     align="center"
                     justify="space-between"
                 >
-                    {/* Left: POS System */}
                     <HStack>
                         <Flex
                             p={1.5}
@@ -158,8 +190,7 @@ export const Layout: React.FC<LayoutProps> = ({
                         </Text>
                     </HStack>
 
-                    {/* Right: Hamburger inside Drawer.Trigger */}
-                    <Drawer.Root >
+                    <Drawer.Root>
                         <Drawer.Trigger asChild>
                             <Button
                                 variant="ghost"

@@ -31,13 +31,11 @@ export async function PUT(req: NextRequest) {
       });
     const user = await verifyAuthorization(req);
     if (!user.id) {
-      window.location.reload()
       return Response.json(
         { error: "Unauthorized" },
         { status: 401 }
       );
     }
-    console.log('user ---->', user.id)
     const product: Product = await prisma.product.create({
       data: {
         id: `pro-${generateUniqueNumber()}`,
