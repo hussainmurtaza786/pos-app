@@ -1,6 +1,8 @@
 import axios from "axios";
 import { AUTH_TOKEN_NAME } from "@/app-config";
 import { showDialog } from "@/components/Dialog";
+import { DEMO_TOKEN } from '@/demo/account';
+import { demoAdapter } from '@/demo/data';
 
 export function getCookie(name: string) {
     const cookieArr = document.cookie.split('; ');
@@ -16,6 +18,10 @@ export const authorizedApiClient = axios.create();
 authorizedApiClient.interceptors.request.use(
     async (config) => {
         const token = getCookie(AUTH_TOKEN_NAME);
+        if (token === DEMO_TOKEN) {
+            config.adapter = demoAdapter;
+            return config;
+        }
         if (!token) {
             showDialog({
                 title: "Request Failed", message: 'Session expired, login again', type: "error",

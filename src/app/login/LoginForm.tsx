@@ -9,6 +9,9 @@ import { PAGES } from '@/app-config';
 import { useRouter } from 'next/navigation';
 import { loginAction } from './action';
 import { toaster } from '@/components/ui/toaster';
+import { AUTH_TOKEN_NAME } from '@/app-config';
+import { demoLogin } from '@/demo/account';
+import { serializeAuthUser } from '@/auth/user';
 
 interface LoginFormProps {
   onLogin?: () => void;
@@ -23,6 +26,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const handleAction = async (values: any) => {
     setError('');
 
+    const input = JSON.parse(values.get('formValues')?.toString() || '{}');
+    const demo = demoLogin(input.email || '', input.password || '');
+    if (demo) {
+      document.cookie = `${AUTH_TOKEN_NAME}=${demo.token}; Max-Age=86400; path=/; SameSite=Lax`;
+      dispatch(updateAuthData({ authToken: demo.token, userDetails: demo.userDetails }));
+      // Reload to clear any cached records from another account.
+      window.location.assign('/app');
+      return;
+    }
+
     const { error, data } = await loginAction(values);
     if (error) {
       toaster.create({
@@ -35,7 +48,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     }
 
     if (data?.token) {
-      dispatch(updateAuthData({ authToken: data.token, userDetails: data.userDetails }));
+      dispatch(updateAuthData({ authToken: data.token, userDetails: serializeAuthUser(data.userDetails) }));
       router.push('/app');
     }
   };

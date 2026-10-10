@@ -1,9 +1,9 @@
 
-import { User } from "@prisma/client";
+import type { AuthUser } from '@/auth/user';
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface StateType {
-    userDetails: Omit<User, 'password'> | null;
+    userDetails: AuthUser | null;
     isAuthenticated: Boolean
     authToken: null | string
 }
